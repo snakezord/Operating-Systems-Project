@@ -22,6 +22,7 @@
 #include <time.h>
 #include "simulation_manager.h"
 #include "control_tower.h"
+#include "flight.h"
 
 
 #define PIPE_NAME "my_pipe"
@@ -59,6 +60,7 @@ typedef struct{
 
 
 settings_t settings;
+flight_t* flights = NULL;
 //Shared mem
 int shmid;
 statistic_t * sharedMemory;
@@ -66,6 +68,9 @@ statistic_t * sharedMemory;
 sem_t sem_log;
 //Message queue
 int msqid;
+//central process id
+int central_process_pid
+
 
 
 #endif

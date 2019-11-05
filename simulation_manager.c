@@ -83,6 +83,7 @@ void create_semaphores(){
     }
 }
 
+
 void create_message_queue(){
     // Message Queue
     msqid = msgget(IPC_PRIVATE, IPC_CREAT|0777);
@@ -91,7 +92,6 @@ void create_message_queue(){
 		exit(-1);
 	}
 }
-
 
 
 void init_stats(){
@@ -105,6 +105,15 @@ void init_stats(){
     sharedMemory->total_flights_landed = 0;
     sharedMemory->total_flights_taken_off = 0;
 }
+
+
+void create_central_process(){
+    central_process_pid = fork();
+    if(central_process_pid == 0){
+        control_tower();
+    }
+}
+
 
 
 int main(){
