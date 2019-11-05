@@ -1,47 +1,128 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "shared.h"
 #include "simulation_manager.h"
 
-int read_config_file(settings_t*settings){
+
+void print_struct(){
+    printf("%d\n", settings.time_unit);
+    printf("%d %d\n", settings.takeoff_duration, settings.takeoff_interval);
+    printf("%d %d\n", settings.landing_duration, settings.landing_interval);
+    printf("%d %d\n", settings.holding_min_duration, settings.holding_max_duration);
+    printf("%d\n", settings.max_departures_on_system);
+    printf("%d\n", settings.max_arrivals_on_system);
+}
+
+int read_config_file(){
     FILE * file;
     file = fopen(FILENAME, "r");
     if(file==NULL){
         return -1;
     }
     char line[MAX_TEXT];
-    if(fscanf(file,"%d",&(settings->time_unit))!=1){
+    if(fscanf(file,"%d", &settings.time_unit)!=1){
+        fclose(file);
+        return -1;
+    }
+
+    fgets(line,MAX_TEXT,file);
+    if(fscanf(file,"%d, %d", &settings.takeoff_duration, &settings.takeoff_interval)!=2){
         fclose(file);
         return -1;
     }
     fgets(line,MAX_TEXT,file);
-    if(fscanf(file,"%d, %d",&(settings->takeoff_duration),&(settings->takeoff_interval))!=2){
+    if(fscanf(file,"%d, %d",&settings.landing_duration, &settings.landing_interval)!=2){
         fclose(file);
         return -1;
     }
     fgets(line,MAX_TEXT,file);
-    if(fscanf(file,"%d, %d",&(settings->landing_duration),&(settings->landing_interval))!=2){
+    if(fscanf(file,"%d, %d", &settings.holding_min_duration, &settings.holding_max_duration)!=2){
         fclose(file);
         return -1;
     }
     fgets(line,MAX_TEXT,file);
-    if(fscanf(file,"%d, %d",&(settings->holding_min_duration),&(settings->holding_max_duration))!=2){
+    if(fscanf(file,"%d", &settings.max_departures_on_system)!=1){
         fclose(file);
         return -1;
     }
     fgets(line,MAX_TEXT,file);
-    if(fscanf(file,"%d",&(settings->max_departures_on_system))!=1){
-        fclose(file);
-        return -1;
-    }
-    fgets(line,MAX_TEXT,file);
-    if(fscanf(file,"%d",&(settings->max_arrivals_on_system))!=1){
+    if(fscanf(file,"%d",&settings.max_arrivals_on_system)!=1){
         fclose(file);
         return -1;
     }
     fclose(file);
+    return 1;
+}
+
+
+
+void create_shared_memory(){
+    //Initiating Shared memory
+	shmid = shmget(IPC_PRIVATE, sizeof(statistic_t), IPC_CREAT|0666);
+    if (shmid == -1) {
+    	perror("shmget(): Failed to create shared memory");
+    	exit(-1);
+    }
+
+    //Attatching shared memory
+    sharedMemory = shmat(shmid, NULL, 0);
+    if (*((int *) sharedMemory) == -1) {
+    	perror("shmat(): Failed to attach memory");
+    	exit(-1);
+    }
+}
+
+
+void create_semaphores(){
+    if (sem_init(&(sharedMemory->sem_stats), 1, 1) == -1) {
+    	perror("sem_init(): Failed to initalize ststs semaphore");
+    	exit(-1);
+    }
+
+    if (sem_init(&sem_log, 1, 1) == -1) {
+    	perror("sem_init(): Failed to initalize log semaphore");
+    	exit(-1);
+    }
+}
+
+void create_message_queue(){
+    // Message Queue
+    msqid = msgget(IPC_PRIVATE, IPC_CREAT|0777);
+	if (msqid < -1) {
+		perror("msgget(): Failed to create MQ");
+		exit(-1);
+	}
+}
+
+
+
+void init_stats(){
+    sharedMemory->average_time_take_off = 0;
+    sharedMemory->average_waiting_time_landing = 0;
+    sharedMemory->flights_redirectionated = 0;
+    sharedMemory->flights_rejected_by_control_tower = 0;
+    sharedMemory->holding_maneuvers_landing = 0 ;
+    sharedMemory->holding_maneuvers_may_day = 0;
+    sharedMemory->total_flights_created  = 0;
+    sharedMemory->total_flights_landed = 0;
+    sharedMemory->total_flights_taken_off = 0;
+}
+
+
+int main(){
+    
+    //read config
+    if(read_config_file())
+        printf("Config read successfully\n");
+    else
+        perror("Error in reading config\n");
+    //print_struct();
+
+
+    //central process    
+    /*if(fork() == 0){
+    	control_tower();
+    	exit(0);
+    }*/
+
     return 0;
 }
+

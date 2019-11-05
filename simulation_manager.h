@@ -4,6 +4,10 @@
 #define FILENAME "config.txt"
 #include "shared.h"
 
-int read_config_file(settings_t*settings);
+
+
+void print_struct();
+int read_config_file();
+
 
 #endif
