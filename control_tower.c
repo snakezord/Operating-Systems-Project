@@ -11,18 +11,18 @@ int control_tower(){
     }
 
     //Create flights
-    flight_departure_t *tmp = &(flights->flight_d);
+    flight_departure_t *tmp = flights_departure;
     for(int i=0;i<settings.max_departures_on_system;i++){
-        flight_t *param = tmp;
-        pthread_create(&(tmp->thread),NULL,/*flight()*/,param);
-        param = param->next;
+        flight_departure_t *param = tmp;
+        pthread_create(&(tmp->thread),NULL,flight_arrival,param);
+        tmp = tmp->next;
     }
 
-    flight_arrival_t *tmp = &(flights->flight_a);
+    flight_arrival_t *tmp = flights_arrival;
     for(int i=0;i<settings.max_arrivals_on_system;i++){
-        flight_t *param = tmp;
-        pthread_create(&(tmp->thread),NULL,/*flight()*/,param);
-        param=param->next;
+        flight_arrival_t *param = tmp;
+        pthread_create(&(tmp->thread),NULL,flight_departure,param);
+        tmp=tmp->next;
     }
 }
 
@@ -65,6 +65,11 @@ void parse_request(char *str){
         flight->init= atoi(strtok(NULL," "));
         strtok(NULL, " ");
         flight->takeoff = atoi(strtok(NULL," "));
+        if(((flight->takeoff)-(flight->init))<=0){
+            perror("Takeoff time is equal to init time\n");
+            return;
+        }
+        append_to_list_arrivals(flights_departure,flight);
     }else if(strcmp(buffer, "DEPARTURE")==0){
         flight_departure_t *flight = malloc(sizeof(flight_departure_t));
         strcpy(flight->name, strtok(NULL," "));
@@ -74,6 +79,11 @@ void parse_request(char *str){
         flight->eta = atoi(strtok(NULL," "));
         strtok(NULL," ");
         flight->fuel = atoi(strtok(NULL," "));
+        if(((flight->fuel)-(flight->eta))<=0){
+            perror("Plane doesn have enough fuel to get to the airport");
+            return;
+        }
+        append_to_list_departures(flights_departure,flight);
     }
 }
 

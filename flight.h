@@ -8,20 +8,25 @@ typedef struct{
     char name[MAX_TEXT];
     int init, takeoff;
     pthread_t thread;
+    struct flight_arrival_t *next;
 }flight_arrival_t;
 
 typedef struct{
     char name[MAX_TEXT];
     int init, eta, fuel;
     pthread_t thread;
+    struct flight_departure_t *next;
 }flight_departure_t;
 
-typedef struct flight{
+/*typedef struct flight{
     flight_arrival_t flight_a;
     flight_departure_t flight_d;
     struct flight *next;
-}flight_t;
+}flight_t;*/
 
+
+void * flight_arrival();
+void * flight_departure();
 
 
 #endif
