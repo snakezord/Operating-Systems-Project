@@ -4,7 +4,7 @@
 
 
 
-int control_tower();
+void control_tower();
 void handle_pipe();
 void parse_request(char *str);
 

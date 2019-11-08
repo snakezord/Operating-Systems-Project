@@ -1,9 +1,8 @@
 #include "shared.h"
-#include "flight.h"
  
  int fd_pipe=-1;
 
-int control_tower(){
+void control_tower(){
     //Named Pipe
     unlink(PIPE_NAME);
     if(mkfifo(PIPE_NAME, O_CREAT|0666)<0){
@@ -102,4 +101,3 @@ void parse_request(char *str){
         append_to_list_departures(flights_departure,flight);
     }
 }
-

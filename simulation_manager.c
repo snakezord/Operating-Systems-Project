@@ -53,6 +53,19 @@ int read_config_file(){
 }
 
 
+void init_stats(){
+    sharedMemoryStats->average_time_take_off = 0;
+    sharedMemoryStats->average_waiting_time_landing = 0;
+    sharedMemoryStats->flights_redirectionated = 0;
+    sharedMemoryStats->flights_rejected_by_control_tower = 0;
+    sharedMemoryStats->holding_maneuvers_landing = 0 ;
+    sharedMemoryStats->holding_maneuvers_may_day = 0;
+    sharedMemoryStats->total_flights_created  = 0;
+    sharedMemoryStats->total_flights_landed = 0;
+    sharedMemoryStats->total_flights_taken_off = 0;
+}
+
+
 
 void create_shared_memory(){
     //Initiating Shared memory for Statistics
@@ -105,19 +118,6 @@ void create_message_queue(){
 		perror("msgget(): Failed to create MQ");
 		exit(-1);
 	}
-}
-
-
-void init_stats(){
-    sharedMemoryStats->average_time_take_off = 0;
-    sharedMemoryStats->average_waiting_time_landing = 0;
-    sharedMemoryStats->flights_redirectionated = 0;
-    sharedMemoryStats->flights_rejected_by_control_tower = 0;
-    sharedMemoryStats->holding_maneuvers_landing = 0 ;
-    sharedMemoryStats->holding_maneuvers_may_day = 0;
-    sharedMemoryStats->total_flights_created  = 0;
-    sharedMemoryStats->total_flights_landed = 0;
-    sharedMemoryStats->total_flights_taken_off = 0;
 }
 
 

@@ -4,14 +4,14 @@
 #include "shared.h"
 
 
-typedef struct{
+typedef struct flight_arrival_t{
     char name[MAX_TEXT];
     int init, takeoff;
     pthread_t thread;
     struct flight_arrival_t *next;
 }flight_arrival_t;
 
-typedef struct{
+typedef struct flight_departure_t{
     char name[MAX_TEXT];
     int init, eta, fuel;
     pthread_t thread;
@@ -25,8 +25,8 @@ typedef struct{
 }flight_t;*/
 
 
-void * flight_arrival();
-void * flight_departure();
+void * flight_arrival(void*arg);
+void * flight_departure(void*arg);
 
 
 #endif
