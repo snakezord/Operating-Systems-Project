@@ -55,33 +55,47 @@ int read_config_file(){
 
 
 void create_shared_memory(){
-    //Initiating Shared memory
-	shmid = shmget(IPC_PRIVATE, sizeof(statistic_t), IPC_CREAT|0666);
-    if (shmid == -1) {
-    	perror("shmget(): Failed to create shared memory");
+    //Initiating Shared memory for Statistics
+	shmidStats = shmget(IPC_PRIVATE, sizeof(statistic_t), IPC_CREAT|0666);
+    if (shmidStats == -1) {
+    	perror("shmget(): Failed to create shared memory for statistics");
+    	exit(-1);
+    }
+    //Attatching shared memory for Statistics
+    sharedMemoryStats = shmat(shmidStats, NULL, 0);
+    if (*((int *) sharedMemoryStats) == -1) {
+    	perror("shmat(): Failed to attach memory for statistics");
+    	exit(-1);
+    }
+    init_stats();
+
+    //Initiating Shared memory for arrivals
+	shmidArrivals = shmget(IPC_PRIVATE, sizeof(flight_arrival_t), IPC_CREAT|0666);
+    if (shmidArrivals == -1) {
+    	perror("shmget(): Failed to create shared memory for arrivals");
+    	exit(-1);
+    }
+    //Attatching shared memory for arrivals
+    sharedMemoryArrivals = shmat(shmidArrivals, NULL, 0);
+    if (*((int *) sharedMemoryArrivals) == -1) {
+    	perror("shmat(): Failed to attach memory for arrivals");
     	exit(-1);
     }
 
-    //Attatching shared memory
-    sharedMemory = shmat(shmid, NULL, 0);
-    if (*((int *) sharedMemory) == -1) {
-    	perror("shmat(): Failed to attach memory");
+    //Initiating Shared memory for arrivals
+	shmidDepartures = shmget(IPC_PRIVATE, sizeof(flight_departure_t), IPC_CREAT|0666);
+    if (shmidDepartures == -1) {
+    	perror("shmget(): Failed to create shared memory for departures");
+    	exit(-1);
+    }
+    //Attatching shared memory for arrivals
+    sharedMemoryDepartures = shmat(shmidDepartures, NULL, 0);
+    if (*((int *) sharedMemoryDepartures) == -1) {
+    	perror("shmat(): Failed to attach memory for departures");
     	exit(-1);
     }
 }
 
-
-void create_semaphores(){
-    if (sem_init(&(sharedMemory->sem_stats), 1, 1) == -1) {
-    	perror("sem_init(): Failed to initalize ststs semaphore");
-    	exit(-1);
-    }
-
-    if (sem_init(&sem_log, 1, 1) == -1) {
-    	perror("sem_init(): Failed to initalize log semaphore");
-    	exit(-1);
-    }
-}
 
 
 void create_message_queue(){
@@ -95,43 +109,42 @@ void create_message_queue(){
 
 
 void init_stats(){
-    sharedMemory->average_time_take_off = 0;
-    sharedMemory->average_waiting_time_landing = 0;
-    sharedMemory->flights_redirectionated = 0;
-    sharedMemory->flights_rejected_by_control_tower = 0;
-    sharedMemory->holding_maneuvers_landing = 0 ;
-    sharedMemory->holding_maneuvers_may_day = 0;
-    sharedMemory->total_flights_created  = 0;
-    sharedMemory->total_flights_landed = 0;
-    sharedMemory->total_flights_taken_off = 0;
+    sharedMemoryStats->average_time_take_off = 0;
+    sharedMemoryStats->average_waiting_time_landing = 0;
+    sharedMemoryStats->flights_redirectionated = 0;
+    sharedMemoryStats->flights_rejected_by_control_tower = 0;
+    sharedMemoryStats->holding_maneuvers_landing = 0 ;
+    sharedMemoryStats->holding_maneuvers_may_day = 0;
+    sharedMemoryStats->total_flights_created  = 0;
+    sharedMemoryStats->total_flights_landed = 0;
+    sharedMemoryStats->total_flights_taken_off = 0;
 }
 
 
 void create_central_process(){
-    central_process_pid = fork();
-    if(central_process_pid == 0){
+    pid_t pid = fork();
+    if(pid == 0){
         control_tower();
+        exit(0);
+    }else{
+        central_process_pid = pid;
     }
 }
 
 
-
 int main(){
-    
-    //read config
-    if(read_config_file())
+    //ler ficheiro config.txt
+    if(read_config_file()){
         printf("Config read successfully\n");
-    else
+    }  
+    else{
         perror("Error in reading config\n");
-    //print_struct();
-
-
-    //central process    
-    /*if(fork() == 0){
-    	control_tower();
-    	exit(0);
-    }*/
-
+        exit(1);
+    }
+    //criar memoria partilhada
+    create_shared_memory();
+    //criar central process
+    create_central_process();
     return 0;
 }
 

@@ -61,10 +61,14 @@ typedef struct{
 
 settings_t settings;
 flight_departure_t* flights_departure = NULL;
-flight_departure_t* flights_arrival = NULL;
+flight_arrival_t* flights_arrival = NULL;
 //Shared mem
-int shmid;
-statistic_t * sharedMemory;
+int shmidStats;
+int shmidArrivals;
+int shmidDepartures;
+statistic_t * sharedMemoryStats;
+flight_departure_t * sharedMemoryDepartures;
+flight_arrival_t * sharedMemoryArrivals;
 //Semaphore
 sem_t sem_log;
 //Message queue
@@ -74,7 +78,8 @@ int central_process_pid;
 
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add);
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);
-
+int count_total_arrivals(flight_arrival_t* list);
+int count_total_departures(flight_departure_t* list);
 
 
 #endif
