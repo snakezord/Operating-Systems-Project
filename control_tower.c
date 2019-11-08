@@ -8,7 +8,7 @@ int control_tower(){
     unlink(PIPE_NAME);
     if(mkfifo(PIPE_NAME, O_CREAT|0666)<0){
         perror("Error creating pipe\n");
-        exit(-1);
+        exit(1);
     }
 
     /*
