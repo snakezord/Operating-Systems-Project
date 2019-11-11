@@ -23,6 +23,7 @@
 #include "simulation_manager.h"
 #include "control_tower.h"
 #include "flight.h"
+#include "logs.h"
 
 
 #define PIPE_NAME "my_pipe"
@@ -60,8 +61,9 @@ typedef struct{
 
 
 settings_t settings;
-flight_departure_t* flights_departure = NULL;
-flight_arrival_t* flights_arrival = NULL;
+//Linked List
+extern flight_departure_t* flights_departure;
+extern flight_arrival_t* flights_arrival;
 //Shared mem
 int shmidStats;
 int shmidArrivals;
@@ -80,7 +82,7 @@ void append_to_list_departures(flight_departure_t * f, flight_departure_t *fligh
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);
 int count_total_arrivals(flight_arrival_t* list);
 int count_total_departures(flight_departure_t* list);
-flight_arrival_t * popFirstArrival(flight_arrival_t* flight);
-flight_departure_t * popFirstDeparture(flight_departure_t* flight);
+flight_arrival_t * popFirstArrival();
+flight_departure_t * popFirstDeparture();
 
 #endif

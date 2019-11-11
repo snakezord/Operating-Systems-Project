@@ -1,7 +1,6 @@
 #include "shared.h"
 #include "simulation_manager.h"
 
-
 void print_struct(){
     printf("%d\n", settings.time_unit);
     printf("%d %d\n", settings.takeoff_duration, settings.takeoff_interval);
@@ -71,13 +70,13 @@ void create_shared_memory(){
     //Initiating Shared memory for Statistics
 	shmidStats = shmget(IPC_PRIVATE, sizeof(statistic_t), IPC_CREAT|0666);
     if (shmidStats == -1) {
-    	perror("shmget(): Failed to create shared memory for statistics");
+    	logger("shmget(): Failed to create shared memory for statistics");
     	exit(-1);
     }
     //Attatching shared memory for Statistics
     sharedMemoryStats = shmat(shmidStats, NULL, 0);
     if (*((int *) sharedMemoryStats) == -1) {
-    	perror("shmat(): Failed to attach memory for statistics");
+    	logger("shmat(): Failed to attach memory for statistics");
     	exit(-1);
     }
     init_stats();
@@ -85,26 +84,26 @@ void create_shared_memory(){
     //Initiating Shared memory for arrivals
 	shmidArrivals = shmget(IPC_PRIVATE, sizeof(flight_arrival_t), IPC_CREAT|0666);
     if (shmidArrivals == -1) {
-    	perror("shmget(): Failed to create shared memory for arrivals");
+    	logger("shmget(): Failed to create shared memory for arrivals");
     	exit(-1);
     }
     //Attatching shared memory for arrivals
     sharedMemoryArrivals = shmat(shmidArrivals, NULL, 0);
     if (*((int *) sharedMemoryArrivals) == -1) {
-    	perror("shmat(): Failed to attach memory for arrivals");
+    	logger("shmat(): Failed to attach memory for arrivals");
     	exit(-1);
     }
 
     //Initiating Shared memory for departures
 	shmidDepartures = shmget(IPC_PRIVATE, sizeof(flight_departure_t), IPC_CREAT|0666);
     if (shmidDepartures == -1) {
-    	perror("shmget(): Failed to create shared memory for departures");
+    	logger("shmget(): Failed to create shared memory for departures");
     	exit(-1);
     }
     //Attatching shared memory for departures
     sharedMemoryDepartures = shmat(shmidDepartures, NULL, 0);
     if (*((int *) sharedMemoryDepartures) == -1) {
-    	perror("shmat(): Failed to attach memory for departures");
+    	logger("shmat(): Failed to attach memory for departures");
     	exit(-1);
     }
 }
@@ -115,34 +114,39 @@ void create_message_queue(){
     // Message Queue
     msqid = msgget(IPC_PRIVATE, IPC_CREAT|0777);
 	if (msqid < -1) {
-		perror("msgget(): Failed to create MQ");
+		logger("msgget(): Failed to create MQ");
 		exit(-1);
 	}
 }
 
 
 void create_central_process(){
-    pid_t pid = fork();
-    if(pid == 0){
+    if(fork() == 0){
+        printf("chegou aqui\n");
         control_tower();
         exit(0);
-    }else{
-        central_process_pid = pid;
     }
 }
 
 
 int main(){
+    //inicializar logs
+    init_logs();
     //ler ficheiro config.txt
     if(read_config_file()){
-        printf("Config read successfully\n");
+        logger("Config read successfully\n");
     }  
     else{
-        perror("Error in reading config\n");
-        exit(1);
+        logger("Error in reading config\n");
+        exit(0);
     }
     //criar memoria partilhada
     create_shared_memory();
+    //criar message queue
+    create_message_queue();
+    //criar threads
+    create_thread_arrivals();
+    create_thread_departures();    
     //criar central process
     create_central_process();
     return 0;

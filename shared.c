@@ -1,5 +1,9 @@
 #include "shared.h"
 
+
+flight_departure_t* flights_departure = NULL;
+flight_arrival_t* flights_arrival = NULL;
+
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add){
     if(f== NULL){
         f->next=flight_to_add;
@@ -49,27 +53,27 @@ int count_total_departures(flight_departure_t* list){
     return i;
 }
 
-flight_arrival_t * popFirstArrival(flight_arrival_t* flight) 
+flight_arrival_t * popFirstArrival() 
 {
-    if (flight == NULL) 
+    if (flights_arrival == NULL) 
         return NULL; 
     
     // Move the head pointer to the next node 
-    flight_arrival_t * to_remove = flight; 
-    flight = flight->next; 
+    flight_arrival_t * to_remove = flights_arrival; 
+    flights_arrival = flights_arrival->next; 
     flight_arrival_t * first = to_remove;
     free(to_remove);
     return first; 
 }
 
-flight_departure_t * popFirstDeparture(flight_departure_t* flight) 
+flight_departure_t * popFirstDeparture() 
 {
-    if (flight == NULL) 
+    if (flights_departure == NULL) 
         return NULL; 
 
     // Move the head pointer to the next node 
-    flight_departure_t * to_remove = flight; 
-    flight = flight->next; 
+    flight_departure_t * to_remove = flights_departure; 
+    flights_departure = flights_departure->next; 
     flight_departure_t * first = to_remove;
     free(to_remove);
     return first; 

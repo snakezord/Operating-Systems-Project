@@ -19,12 +19,14 @@ int init_logs(){
     return 0;
 }
 
-void log(const char*string){
+void logger(const char*string){
     char buffer[100];
     struct  tm *sTm;
     time_t now = time(0);
     sTm = gmtime(&now);
     strftime(buffer,sizeof(buffer), "%H:%M:%S", sTm);
+    sem_wait(sem_logs);
+    printf("%s %s", buffer, string);
     logs_file = fopen("logs.txt","a");
     if(logs_file != NULL){
         fprintf(logs_file,"%s %s", buffer, string);
@@ -36,13 +38,13 @@ void log(const char*string){
 void log_int(const char*string, int n){
     char buffer[100];
     sprintf(buffer,string,n);
-    log(buffer);
+    logger(buffer);
 }
 
 void log_str(const char*str, char*s){
     char buffer[100];
     sprintf(buffer,str,s);
-    log(buffer);
+    logger(buffer);
 }
 
 void log_close(){
