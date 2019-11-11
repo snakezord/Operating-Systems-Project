@@ -95,13 +95,13 @@ void create_shared_memory(){
     	exit(-1);
     }
 
-    //Initiating Shared memory for arrivals
+    //Initiating Shared memory for departures
 	shmidDepartures = shmget(IPC_PRIVATE, sizeof(flight_departure_t), IPC_CREAT|0666);
     if (shmidDepartures == -1) {
     	perror("shmget(): Failed to create shared memory for departures");
     	exit(-1);
     }
-    //Attatching shared memory for arrivals
+    //Attatching shared memory for departures
     sharedMemoryDepartures = shmat(shmidDepartures, NULL, 0);
     if (*((int *) sharedMemoryDepartures) == -1) {
     	perror("shmat(): Failed to attach memory for departures");

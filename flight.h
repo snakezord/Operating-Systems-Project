@@ -27,6 +27,6 @@ typedef struct flight_departure_t{
 
 void * flight_arrival(void*arg);
 void * flight_departure(void*arg);
-
+flight_arrival_t * popFirstArrival(flight_arrival_t* flight);
 
 #endif

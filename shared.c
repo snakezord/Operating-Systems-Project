@@ -1,5 +1,4 @@
 #include "shared.h"
-#include "flight.h"
 
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add){
     if(f== NULL){
@@ -48,4 +47,30 @@ int count_total_departures(flight_departure_t* list){
         list = list->next;
     }
     return i;
+}
+
+flight_arrival_t * popFirstArrival(flight_arrival_t* flight) 
+{
+    if (flight == NULL) 
+        return NULL; 
+    
+    // Move the head pointer to the next node 
+    flight_arrival_t * to_remove = flight; 
+    flight = flight->next; 
+    flight_arrival_t * first = to_remove;
+    free(to_remove);
+    return first; 
+}
+
+flight_departure_t * popFirstDeparture(flight_departure_t* flight) 
+{
+    if (flight == NULL) 
+        return NULL; 
+
+    // Move the head pointer to the next node 
+    flight_departure_t * to_remove = flight; 
+    flight = flight->next; 
+    flight_departure_t * first = to_remove;
+    free(to_remove);
+    return first; 
 }

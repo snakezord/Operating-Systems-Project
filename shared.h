@@ -80,6 +80,7 @@ void append_to_list_departures(flight_departure_t * f, flight_departure_t *fligh
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);
 int count_total_arrivals(flight_arrival_t* list);
 int count_total_departures(flight_departure_t* list);
-
+flight_arrival_t * popFirstArrival(flight_arrival_t* flight);
+flight_departure_t * popFirstDeparture(flight_departure_t* flight);
 
 #endif

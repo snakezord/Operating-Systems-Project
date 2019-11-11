@@ -1,6 +1,21 @@
 #include "shared.h"
- 
- int fd_pipe=-1;
+
+
+int fd_pipe=-1;
+
+void create_thread_arrivals(){
+    while(flights_arrival != NULL){
+        flight_arrival_t * arrival = popFirstArrival(flights_arrival);
+        pthread_create(&(arrival->thread),NULL,flight_arrival,arrival);
+    }
+}
+
+void create_thread_departures(){
+    while(flights_departure != NULL){
+        flight_departure_t * departure = popFirstDeparture(flights_departure);
+        pthread_create(&(departure->thread),NULL,flight_departure,departure);
+    }
+}
 
 void control_tower(){
     //Named Pipe
@@ -9,22 +24,7 @@ void control_tower(){
         perror("Error creating pipe\n");
         exit(1);
     }
-
-    /*
-    //Create flights threads
-    flight_departure_t *tmp = flights_departure;
-    for(int i=0;i<settings.max_departures_on_system;i++){
-        flight_departure_t *param = tmp;
-        pthread_create(&(tmp->thread),NULL,flight_arrival,param);
-        tmp = tmp->next;
-    }
-
-    flight_arrival_t *tmp = flights_arrival;
-    for(int i=0;i<settings.max_arrivals_on_system;i++){
-        flight_arrival_t *param = tmp;
-        pthread_create(&(tmp->thread),NULL,flight_departure,param);
-        tmp=tmp->next;
-    }*/
+    handle_pipe();
 }
 
 void handle_pipe(){
@@ -62,7 +62,7 @@ void parse_request(char *str){
     if(strcmp(buffer, "ARRIVAL")==0){
         flight_arrival_t *flight = malloc(sizeof(flight_arrival_t));
         strcpy(flight->name, strtok(NULL," "));
-        strtok(NULL," "); 
+        strtok(NULL," ");
         flight->init= atoi(strtok(NULL," "));
         strtok(NULL, " ");
         flight->takeoff = atoi(strtok(NULL," "));
@@ -74,8 +74,6 @@ void parse_request(char *str){
             perror("You have exceed the total number of arrivals for this airport");
             return;
         }
-        //criação da thread
-        pthread_create(&(flight->thread),NULL,flight_arrival,flight);
         //adicionar a linkedlist
         append_to_list_arrivals(flights_arrival,flight);
     }else if(strcmp(buffer, "DEPARTURE")==0){
@@ -95,9 +93,9 @@ void parse_request(char *str){
             perror("You have exceed the total number of departures for this airport");
             return;
         }
-        //criação da thread
-        pthread_create(&(flight->thread),NULL,flight_departure,flight);
         //adicionar a linked list
         append_to_list_departures(flights_departure,flight);
+        
+        
     }
 }
