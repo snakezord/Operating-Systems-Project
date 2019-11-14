@@ -12,7 +12,10 @@ void init_stats();
 void init_semaphores();
 void create_shared_memory();
 void create_message_queue();
-void signals();
 void init();
+void handle_pipe();
+void parse_request(char *str);
+void create_thread_arrivals();
+void create_thread_departures();
 
 #endif

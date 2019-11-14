@@ -55,7 +55,6 @@ typedef struct{
     int flights_redirectionated;
     int flights_rejected_by_control_tower;
     sem_t sem_stats; //Semaphore to write statistics
-
 }statistic_t;
 
 //flag for program termination
