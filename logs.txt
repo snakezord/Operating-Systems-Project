@@ -1,1 +1,2 @@
-22:27:34 Config read successfully
+00:06:47 Config read successfully
+00:32:09 Error opening named pipe.

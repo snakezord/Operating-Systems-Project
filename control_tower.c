@@ -1,9 +1,5 @@
 #include "shared.h"
 
-
-
-int fd_pipe;
-
 void create_thread_arrivals(){
     while(flights_arrival != NULL){
         flight_arrival_t * arrival = popFirstArrival();
@@ -19,10 +15,11 @@ void create_thread_departures(){
 }
 
 void control_tower(){
-    printf("Central Process Created\n");
+    logger("Central Process Created\n");
     //Named Pipe
     unlink(PIPE_NAME);
-    if(mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600)<0){
+    //EEXIST     =     File exists (POSIX.1-2001).
+    if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
         logger("Error creating pipe\n");
         exit(0);
     }
@@ -30,7 +27,7 @@ void control_tower(){
 }
 
 void handle_pipe(){
-    while(1){
+    while(!TERMINATE){
         if((fd_pipe = open(PIPE_NAME, O_RDONLY|O_NONBLOCK))<0){
             logger("Error opening named pipe.\n");
             exit(0);
@@ -63,6 +60,7 @@ void handle_pipe(){
 void parse_request(char *str){
     char *buffer;
     buffer = strtok(str, " ");
+    int VALID_COMMAND = 0;
     if(strcmp(buffer, "ARRIVAL")==0){
         flight_arrival_t *flight = malloc(sizeof(flight_arrival_t));
         strcpy(flight->name, strtok(NULL," "));
@@ -70,17 +68,17 @@ void parse_request(char *str){
         flight->init= atoi(strtok(NULL," "));
         strtok(NULL, " ");
         flight->takeoff = atoi(strtok(NULL," "));
-        if(((flight->takeoff)-(flight->init))<=0){
-            logger("Takeoff time is equal to init time\n");
-            return;
+        if(((flight->takeoff)-(flight->init))>=0){
+            if((count_total_arrivals(flights_arrival) + 1) <= settings.max_arrivals_on_system){
+                append_to_list_arrivals(flights_arrival,flight);
+                logger("ARRIVAL received\n");
+            }else{
+                logger("You have exceed the total number of arrivals for this airport");
+            }
+        }else{
+            logger("Takeoff time is less than init time\n");
         }
-        if(count_total_arrivals(flights_arrival) >= settings.max_arrivals_on_system){
-            logger("You have exceed the total number of arrivals for this airport");
-            return;
-        }
-        //adicionar a linkedlist
-        append_to_list_arrivals(flights_arrival,flight);
-        printf("flight received\n");
+        VALID_COMMAND = 1;
     }else if(strcmp(buffer, "DEPARTURE")==0){
         flight_departure_t *flight = malloc(sizeof(flight_departure_t));
         strcpy(flight->name, strtok(NULL," "));
@@ -90,16 +88,18 @@ void parse_request(char *str){
         flight->eta = atoi(strtok(NULL," "));
         strtok(NULL," ");
         flight->fuel = atoi(strtok(NULL," "));
-        if(((flight->fuel)-(flight->eta))<=0){
+        if(((flight->fuel)-(flight->eta))>=0){
+            if((count_total_departures(flights_departure) + 1) <= settings.max_departures_on_system){
+                append_to_list_departures(flights_departure,flight);
+                logger("DEPARTURE received\n");
+            }else{
+                logger("You have exceed the total number of departures for this airport");
+            }
+        }else{
             logger("Plane doesn't have enough fuel to get to the airport");
-            return;
         }
-        if(count_total_departures(flights_departure) >= settings.max_departures_on_system){
-            logger("You have exceed the total number of departures for this airport");
-            return;
-        }
-        //adicionar a linked list
-        append_to_list_departures(flights_departure,flight);
-        printf("flight received\n");
+         VALID_COMMAND = 1;
+    }if(!VALID_COMMAND){
+        logger("Invalid command!\n");
     }
 }

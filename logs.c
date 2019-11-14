@@ -25,14 +25,12 @@ void logger(const char*string){
     time_t now = time(0);
     sTm = gmtime(&now);
     strftime(buffer,sizeof(buffer), "%H:%M:%S", sTm);
-    sem_wait(sem_logs);
     printf("%s %s", buffer, string);
     logs_file = fopen("logs.txt","a");
     if(logs_file != NULL){
         fprintf(logs_file,"%s %s", buffer, string);
         fclose(logs_file);
     }
-    sem_post(sem_logs);
 }
 
 void log_int(const char*string, int n){

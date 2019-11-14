@@ -58,25 +58,22 @@ typedef struct{
 
 }statistic_t;
 
-
-
+//flag for program termination
+extern int TERMINATE;
 settings_t settings;
 //Linked List
 extern flight_departure_t* flights_departure;
 extern flight_arrival_t* flights_arrival;
 //Shared mem
 int shmidStats;
-int shmidArrivals;
-int shmidDepartures;
 statistic_t * sharedMemoryStats;
-flight_departure_t * sharedMemoryDepartures;
-flight_arrival_t * sharedMemoryArrivals;
 //Semaphore
 sem_t sem_log;
 //Message queue
 int msqid;
-//central process id
-int central_process_pid;
+//pipe
+int fd_pipe;
+
 
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add);
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);

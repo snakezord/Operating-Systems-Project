@@ -1,5 +1,4 @@
 #include "shared.h"
-#include "simulation_manager.h"
 
 void print_struct(){
     printf("%d\n", settings.time_unit);
@@ -51,7 +50,6 @@ int read_config_file(){
     return 1;
 }
 
-
 void init_stats(){
     sharedMemoryStats->average_time_take_off = 0;
     sharedMemoryStats->average_waiting_time_landing = 0;
@@ -64,7 +62,28 @@ void init_stats(){
     sharedMemoryStats->total_flights_taken_off = 0;
 }
 
+void show_stats(int sig){
+	printf("\n\nStatistics:\n\n");
+	printf("average_time_take_off: %f\n",sharedMemoryStats->average_time_take_off);
+	printf("average_waiting_time_landing: %f\n",sharedMemoryStats ->average_waiting_time_landing);
+	printf("Total flights_redirectionated: %d\n",sharedMemoryStats ->flights_redirectionated);
+	printf("Total flights_rejected_by_control_tower: %d\n",sharedMemoryStats ->flights_rejected_by_control_tower);
+	printf("total_flights_created: %d\n",sharedMemoryStats ->total_flights_created);
+    printf("total_flights_landed: %d\n",sharedMemoryStats ->total_flights_landed);
+	printf("total_flights_taken_off: %d\n",sharedMemoryStats ->total_flights_taken_off);
+}
 
+void init_semaphores(){
+    if (sem_init(&(sharedMemoryStats->sem_stats), 1, 1) == -1) {
+    	perror("sem_init(): Failed to initialize stats semaphore");
+    	exit(-1);
+    }
+
+    if (sem_init(&sem_log, 1, 1) == -1) {
+    	perror("sem_init(): Failed to initialize log semaphore");
+    	exit(-1);
+    }
+}
 
 void create_shared_memory(){
     //Initiating Shared memory for Statistics
@@ -79,36 +98,8 @@ void create_shared_memory(){
     	logger("shmat(): Failed to attach memory for statistics");
     	exit(-1);
     }
-    init_stats();
 
-    //Initiating Shared memory for arrivals
-	shmidArrivals = shmget(IPC_PRIVATE, sizeof(flight_arrival_t), IPC_CREAT|0666);
-    if (shmidArrivals == -1) {
-    	logger("shmget(): Failed to create shared memory for arrivals");
-    	exit(-1);
-    }
-    //Attatching shared memory for arrivals
-    sharedMemoryArrivals = shmat(shmidArrivals, NULL, 0);
-    if (*((int *) sharedMemoryArrivals) == -1) {
-    	logger("shmat(): Failed to attach memory for arrivals");
-    	exit(-1);
-    }
-
-    //Initiating Shared memory for departures
-	shmidDepartures = shmget(IPC_PRIVATE, sizeof(flight_departure_t), IPC_CREAT|0666);
-    if (shmidDepartures == -1) {
-    	logger("shmget(): Failed to create shared memory for departures");
-    	exit(-1);
-    }
-    //Attatching shared memory for departures
-    sharedMemoryDepartures = shmat(shmidDepartures, NULL, 0);
-    if (*((int *) sharedMemoryDepartures) == -1) {
-    	logger("shmat(): Failed to attach memory for departures");
-    	exit(-1);
-    }
 }
-
-
 
 void create_message_queue(){
     // Message Queue
@@ -119,19 +110,47 @@ void create_message_queue(){
 	}
 }
 
+void terminate(int sig){
+    logger("Program ended!\n");
 
-void create_central_process(){
-    if(fork() == 0){
-        printf("chegou aqui\n");
-        control_tower();
-        exit(0);
-    }
+    TERMINATE = 1;
+    
+    //Shared memory detach
+	shmdt(&sharedMemoryStats);
+
+    //Remove shared memory
+	shmctl(shmidStats, IPC_RMID, NULL);
+    
+    //Remove message queue
+	msgctl(msqid, IPC_RMID, NULL);
+
+    //Destroy stats semaphore
+	sem_destroy(&sharedMemoryStats->sem_stats);
+
+    //Destroy log semaphore
+	sem_destroy(&sem_log);   
+
+    //Waits for processes to exit
+	while(wait(NULL) > 0);
 }
 
+void init(){
+    
+    //criar memoria partilhada
+    create_shared_memory();
 
-int main(){
+    init_semaphores();
+    init_stats();
+    
+    //criar message queue
+    create_message_queue();
+
+    signal(SIGINT, terminate);
+    signal(SIGUSR1,show_stats);
+
     //inicializar logs
     init_logs();
+
     //ler ficheiro config.txt
     if(read_config_file()){
         logger("Config read successfully\n");
@@ -140,15 +159,31 @@ int main(){
         logger("Error in reading config\n");
         exit(0);
     }
-    //criar memoria partilhada
-    create_shared_memory();
-    //criar message queue
-    create_message_queue();
+
     //criar threads
-    create_thread_arrivals();
-    create_thread_departures();    
-    //criar central process
+    //create_thread_arrivals();
+    //create_thread_departures(); 
+
+}
+
+
+void create_central_process(){
+    if(fork() == 0){
+        control_tower();
+        exit(0);
+    }
+}
+
+
+int main(){
+
+    init();
+    
+    logger("Program started!\n");
+
+    //create central process
     create_central_process();
+
     return 0;
 }
 
