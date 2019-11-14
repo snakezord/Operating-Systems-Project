@@ -5,6 +5,10 @@ flight_departure_t* flights_departure = NULL;
 flight_arrival_t* flights_arrival = NULL;
 int TERMINATE = 0;
 
+void print_list(){
+    
+}
+
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add){
     if(f== NULL){
         f->next=flight_to_add;

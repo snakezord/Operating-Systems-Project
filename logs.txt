@@ -1,2 +1,2 @@
-00:06:47 Config read successfully
-00:32:09 Error opening named pipe.
+22:42:53 Config read successfully
+22:43:15 Program ended!

@@ -74,14 +74,15 @@ void show_stats(int sig){
 }
 
 void init_semaphores(){
-    if (sem_init(&(sharedMemoryStats->sem_stats), 1, 1) == -1) {
+
+    if ((sem_stats = sem_open("/sem_stats", O_CREAT, 0644, 1)) == SEM_FAILED) {
     	perror("sem_init(): Failed to initialize stats semaphore");
-    	exit(-1);
+    	exit(EXIT_FAILURE);
     }
 
-    if (sem_init(&sem_log, 1, 1) == -1) {
+    if ((sem_log = sem_open("/sem_log", O_CREAT, 0644, 1)) == SEM_FAILED) {
     	perror("sem_init(): Failed to initialize log semaphore");
-    	exit(-1);
+    	exit(EXIT_FAILURE);
     }
 }
 
@@ -110,6 +111,17 @@ void create_message_queue(){
 	}
 }
 
+void create_pipe(){
+
+    //unlink(PIPE_NAME);
+    //EEXIST     =     File exists (POSIX.1-2001).
+    if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
+        logger("Error creating pipe\n");
+        exit(0);
+    }
+}
+
+
 void terminate(int sig){
     logger("Program ended!\n");
 
@@ -125,13 +137,30 @@ void terminate(int sig){
 	msgctl(msqid, IPC_RMID, NULL);
 
     //Destroy stats semaphore
-	sem_destroy(&sharedMemoryStats->sem_stats);
+    if (sem_close(sem_stats) == -1) {
+        perror("Error closing sem_stats");
+        exit(EXIT_FAILURE);
+    }
 
+    if (sem_unlink("/sem_stats") == -1) {
+    perror("Error unlinking sem_stats");
+    exit(EXIT_FAILURE);
+    }
+    
     //Destroy log semaphore
-	sem_destroy(&sem_log);   
+	if (sem_close(sem_log) == -1) {
+        perror("Error closing sem_log");
+        exit(EXIT_FAILURE);
+    }
 
+    if (sem_unlink("/sem_log") == -1) {
+    perror("Error unlinking sem_log");
+    exit(EXIT_FAILURE);
+    }   
+    
     //Waits for processes to exit
 	while(wait(NULL) > 0);
+    
 }
 
 void init(){
@@ -146,7 +175,7 @@ void init(){
     create_message_queue();
 
     signal(SIGINT, terminate);
-    signal(SIGUSR1,show_stats);
+    signal(SIGUSR1, show_stats);
 
     //inicializar logs
     init_logs();
@@ -159,14 +188,9 @@ void init(){
         logger("Error in reading config\n");
         exit(0);
     }
+    
+    create_pipe();
 
-    //Named Pipe
-    unlink(PIPE_NAME);
-    //EEXIST     =     File exists (POSIX.1-2001).
-    if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
-        logger("Error creating pipe\n");
-        exit(0);
-    }
     handle_pipe();
 
     //criar threads
@@ -182,6 +206,7 @@ void create_central_process(){
         exit(0);
     }
 }
+
 
 void handle_pipe(){
     while(!TERMINATE){
@@ -208,6 +233,7 @@ void handle_pipe(){
             }
             logger(buffer);
             parse_request(buffer);
+            break;
         }
         close(fd_pipe);
     }
@@ -258,21 +284,6 @@ void parse_request(char *str){
          VALID_COMMAND = 1;
     }if(!VALID_COMMAND){
         logger("Invalid command!\n");
-    }
-}
-
-
-void create_thread_arrivals(){
-    while(flights_arrival != NULL){
-        flight_arrival_t * arrival = popFirstArrival();
-        pthread_create(&(arrival->thread),NULL,flight_arrival,arrival);
-    }
-}
-
-void create_thread_departures(){
-    while(flights_departure != NULL){
-        flight_departure_t * departure = popFirstDeparture();
-        pthread_create(&(departure->thread),NULL,flight_departure,departure);
     }
 }
 

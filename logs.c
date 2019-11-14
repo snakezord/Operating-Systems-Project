@@ -2,7 +2,6 @@
 
 #define SEMAPHORE_NAME "logs_sem"
 
-sem_t *sem_logs;
 FILE * logs_file;
 
 int init_logs(){
@@ -10,9 +9,7 @@ int init_logs(){
     if(logs_file==NULL){
         return -1;
     }
-    sem_unlink(SEMAPHORE_NAME);
-    sem_logs = sem_open(SEMAPHORE_NAME, O_CREAT, 0777, 1);
-    if(sem_logs==NULL){
+    if(sem_log==NULL){
         fclose(logs_file);
         return -1;
     }
@@ -25,12 +22,14 @@ void logger(const char*string){
     time_t now = time(0);
     sTm = gmtime(&now);
     strftime(buffer,sizeof(buffer), "%H:%M:%S", sTm);
+    sem_wait(sem_log);
     printf("%s %s", buffer, string);
     logs_file = fopen("logs.txt","a");
     if(logs_file != NULL){
         fprintf(logs_file,"%s %s", buffer, string);
         fclose(logs_file);
     }
+    sem_post(sem_log);
 }
 
 void log_int(const char*string, int n){
@@ -43,9 +42,4 @@ void log_str(const char*str, char*s){
     char buffer[100];
     sprintf(buffer,str,s);
     logger(buffer);
-}
-
-void log_close(){
-    fclose(logs_file);
-    sem_close(sem_logs);
 }

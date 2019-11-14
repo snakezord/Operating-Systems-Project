@@ -54,7 +54,6 @@ typedef struct{
     double holding_maneuvers_may_day;
     int flights_redirectionated;
     int flights_rejected_by_control_tower;
-    sem_t sem_stats; //Semaphore to write statistics
 }statistic_t;
 
 //flag for program termination
@@ -67,7 +66,8 @@ extern flight_arrival_t* flights_arrival;
 int shmidStats;
 statistic_t * sharedMemoryStats;
 //Semaphore
-sem_t sem_log;
+sem_t * sem_stats;
+sem_t * sem_log;
 //Message queue
 int msqid;
 //pipe
