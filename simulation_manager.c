@@ -111,17 +111,6 @@ void create_message_queue(){
 	}
 }
 
-void create_pipe(){
-
-    //unlink(PIPE_NAME);
-    //EEXIST     =     File exists (POSIX.1-2001).
-    if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
-        logger("Error creating pipe\n");
-        exit(0);
-    }
-}
-
-
 void terminate(int sig){
     logger("Program ended!\n");
 
@@ -179,24 +168,44 @@ void init(){
 
     //inicializar logs
     init_logs();
-
+    
     //ler ficheiro config.txt
     if(read_config_file()){
         logger("Config read successfully\n");
-    }  
+    }
     else{
         logger("Error in reading config\n");
         exit(0);
     }
     
+    logger("Program started!\n");
+
     create_pipe();
 
     handle_pipe();
-
+    
     //criar threads
-    //create_thread_arrivals();
-    //create_thread_departures(); 
+    create_thread_arrivals();
+    create_thread_departures(); 
 
+}
+
+void create_thread_arrivals(){
+    printf("arrival thread\n");
+    while(flights_arrival != NULL){
+        flight_arrival_t * arrival = popFirstArrival();
+        pthread_create(&(arrival->thread),NULL,flight_arrival,arrival);
+        printf("thread arrival created\n");
+    }
+}
+
+void create_thread_departures(){
+    printf("departure thread\n");
+    while(flights_departure != NULL){
+        flight_departure_t * departure = popFirstDeparture();
+        pthread_create(&(departure->thread),NULL,flight_departure,departure);
+        printf("thread departure created\n");
+    }
 }
 
 
@@ -207,20 +216,29 @@ void create_central_process(){
     }
 }
 
+void create_pipe(){
+
+    //unlink(PIPE_NAME);
+    //EEXIST     =     File exists (POSIX.1-2001).
+    if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
+        logger("Error creating pipe\n");
+        exit(0);
+    }
+}
 
 void handle_pipe(){
+    if((fd_pipe = open(PIPE_NAME, O_RDONLY))<0){
+        logger("Error opening named pipe.\n");
+        exit(0);
+    }
     while(!TERMINATE){
-        if((fd_pipe = open(PIPE_NAME, O_RDONLY|O_NONBLOCK))<0){
-            logger("Error opening named pipe.\n");
-            exit(0);
-        }
         while(1){
             char buffer[MAX_TEXT];
             int n = 0;
             char c = 0;
             int error = 0;
             do{
-                if(read(fd_pipe,&c,1)<=0){
+                if(read(fd_pipe,&c,1) <= 0){
                     error=1;
                     break;
                 }
@@ -233,7 +251,6 @@ void handle_pipe(){
             }
             logger(buffer);
             parse_request(buffer);
-            break;
         }
         close(fd_pipe);
     }
@@ -254,7 +271,9 @@ void parse_request(char *str){
         if(((flight->takeoff)-(flight->init))>=0){
             if((count_total_arrivals(flights_arrival) + 1) <= settings.max_arrivals_on_system){
                 append_to_list_arrivals(flights_arrival,flight);
-                logger("ARRIVAL received\n");
+                printf("\n%s\n",flight->name);
+                printf("\n%s\n",flights_arrival->name);
+                print_list_arrivals(flights_arrival);
             }else{
                 logger("You have exceed the total number of arrivals for this airport");
             }
@@ -274,7 +293,7 @@ void parse_request(char *str){
         if(((flight->fuel)-(flight->eta))>=0){
             if((count_total_departures(flights_departure) + 1) <= settings.max_departures_on_system){
                 append_to_list_departures(flights_departure,flight);
-                logger("DEPARTURE received\n");
+                print_list_departures(flights_departure);
             }else{
                 logger("You have exceed the total number of departures for this airport");
             }
@@ -288,15 +307,13 @@ void parse_request(char *str){
 }
 
 
-
 int main(){
 
     init();
     
-    logger("Program started!\n");
-
     //create central process
     create_central_process();
+    
 
     return 0;
 }

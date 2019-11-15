@@ -5,31 +5,41 @@ flight_departure_t* flights_departure = NULL;
 flight_arrival_t* flights_arrival = NULL;
 int TERMINATE = 0;
 
-void print_list(){
-    
+void print_list_departures(flight_departure_t * list){
+    while(list != NULL){
+        printf("%s", list->name);
+        list = list->next;
+    }
+}
+
+void print_list_arrivals(flight_arrival_t * list){
+    while(list != NULL){
+        printf("%s", list->name);
+        list = list->next;
+    }
 }
 
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add){
-    if(f== NULL){
-        f->next=flight_to_add;
+    if(f == NULL){
+        f=flight_to_add;
         flight_to_add->next = NULL;
     }
-    while(f!=NULL){
+    while(f != NULL){
         f = f->next;
     }
-    f->next=f;
+    f=flight_to_add;
     f->next = NULL;
 }
 
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add){
-    if(f== NULL){
-        f->next=flight_to_add;
+    if(f == NULL){
+        f=flight_to_add;
         flight_to_add->next = NULL;
     }
-    while(f!=NULL){
+    while(f->next != NULL){
         f = f->next;
     }
-    f->next=f;
+    f->next=flight_to_add;
     f->next = NULL;
 }
 

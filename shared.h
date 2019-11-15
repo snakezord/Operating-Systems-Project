@@ -59,7 +59,7 @@ typedef struct{
 //flag for program termination
 extern int TERMINATE;
 settings_t settings;
-//Linked List
+//Linked Lists
 extern flight_departure_t* flights_departure;
 extern flight_arrival_t* flights_arrival;
 //Shared mem
@@ -73,7 +73,8 @@ int msqid;
 //pipe
 int fd_pipe;
 
-
+void print_list_departures(flight_departure_t * list);
+void print_list_arrivals(flight_arrival_t * list);
 void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add);
 void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);
 int count_total_arrivals(flight_arrival_t* list);

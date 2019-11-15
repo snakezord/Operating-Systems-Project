@@ -1,7 +1,5 @@
 #include "shared.h"
 
-#define SEMAPHORE_NAME "logs_sem"
-
 FILE * logs_file;
 
 int init_logs(){

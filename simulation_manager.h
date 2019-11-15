@@ -5,7 +5,6 @@
 #include "shared.h"
 
 
-
 void print_struct();
 int read_config_file();
 void init_stats();
