@@ -144,7 +144,7 @@ void terminate(int sig){
         perror("Error closing sem_log");
         exit(EXIT_FAILURE);
     }
-
+    
     if (sem_unlink("/sem_log") == -1) {
     perror("Error unlinking sem_log");
     exit(EXIT_FAILURE);
@@ -165,8 +165,8 @@ void init(){
     //criar message queue
     create_message_queue();
 
+    signal(SIGUSR1, SIG_IGN);
     signal(SIGINT, terminate);
-    signal(SIGUSR1, show_stats);
 
     //inicializar logs
     init_logs();
@@ -181,6 +181,8 @@ void init(){
     }
     
     logger("Program started!\n");
+
+    create_central_process();
 
     create_pipe();
 
@@ -295,6 +297,8 @@ void parse_request(char *str){
         if(((flight->fuel)-(flight->eta))>=0){
             if((count_total_departures(flights_departure) + 1) <= settings.max_departures_on_system){
                 append_to_list_departures(flights_departure,flight);
+                printf("\n%s\n",flight->name);
+                printf("\n%s\n",flights_departure->name);
                 print_list_departures(flights_departure);
             }else{
                 logger("You have exceed the total number of departures for this airport");
@@ -313,10 +317,6 @@ int main(){
 
     init();
     
-    //create central process
-    create_central_process();
-    
-
     return 0;
 }
 

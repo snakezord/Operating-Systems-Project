@@ -3,9 +3,11 @@
 
 
 void control_tower(){
-
-    logger("Control Tower - Central Process Created\n");
-
     
+    signal(SIGUSR1, show_stats);
+    logger("Control Tower - Central Process Created\n");
+    while(!TERMINATE){
+    }
+
 }
 

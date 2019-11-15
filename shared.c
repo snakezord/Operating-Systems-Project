@@ -24,10 +24,10 @@ void append_to_list_departures(flight_departure_t * f, flight_departure_t *fligh
         f=flight_to_add;
         flight_to_add->next = NULL;
     }
-    while(f != NULL){
+    while(f->next != NULL){
         f = f->next;
     }
-    f=flight_to_add;
+    f->next=flight_to_add;
     f->next = NULL;
 }
 
