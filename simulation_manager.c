@@ -51,6 +51,7 @@ int read_config_file(){
 }
 
 void init_stats(){
+    sem_wait(sem_stats);
     sharedMemoryStats->average_time_take_off = 0;
     sharedMemoryStats->average_waiting_time_landing = 0;
     sharedMemoryStats->flights_redirectionated = 0;
@@ -60,9 +61,11 @@ void init_stats(){
     sharedMemoryStats->total_flights_created  = 0;
     sharedMemoryStats->total_flights_landed = 0;
     sharedMemoryStats->total_flights_taken_off = 0;
+    sem_post(sem_stats);
 }
 
 void show_stats(int sig){
+    sem_wait(sem_stats);
 	printf("\n\nStatistics:\n\n");
 	printf("average_time_take_off: %f\n",sharedMemoryStats->average_time_take_off);
 	printf("average_waiting_time_landing: %f\n",sharedMemoryStats ->average_waiting_time_landing);
@@ -71,6 +74,7 @@ void show_stats(int sig){
 	printf("total_flights_created: %d\n",sharedMemoryStats ->total_flights_created);
     printf("total_flights_landed: %d\n",sharedMemoryStats ->total_flights_landed);
 	printf("total_flights_taken_off: %d\n",sharedMemoryStats ->total_flights_taken_off);
+    sem_post(sem_stats);
 }
 
 void init_semaphores(){
@@ -99,7 +103,6 @@ void create_shared_memory(){
     	logger("shmat(): Failed to attach memory for statistics");
     	exit(-1);
     }
-
 }
 
 void create_message_queue(){
@@ -148,8 +151,7 @@ void terminate(int sig){
     }   
     
     //Waits for processes to exit
-	while(wait(NULL) > 0);
-    
+	while(wait(NULL) > 0);   
 }
 
 void init(){
@@ -252,8 +254,8 @@ void handle_pipe(){
             logger(buffer);
             parse_request(buffer);
         }
-        close(fd_pipe);
     }
+    close(fd_pipe);
     exit(0);
 }
 

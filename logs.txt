@@ -1,3 +1,5 @@
-00:37:02 Config read successfully
-00:37:02 Program started!
-00:37:04 ARRIVAL TP111 init: 0 eta: 100 fuel: 100000:37:07 Program ended!
+14:59:18 Config read successfully
+14:59:18 Program started!
+14:59:20 fgf14:59:20 Invalid command!
+14:59:22 fgf14:59:22 Invalid command!
+14:59:25 ARRIVAL TP111 init: 0 eta: 100 fuel: 100014:59:27 ARRIVAL TP111 init: 0 eta: 100 fuel: 100014:59:30 Program ended!
