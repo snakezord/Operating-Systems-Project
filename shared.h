@@ -32,7 +32,8 @@
 #define MAX 200
 #define STRINGSIZE 256
 #define MAX_TEXT 1024
-
+#define DEPARTURE 1
+#define ARRIVAL 2
 
 typedef struct{
     int time_unit;
@@ -56,8 +57,13 @@ typedef struct{
     int flights_rejected_by_control_tower;
 }statistic_t;
 
+
+extern pthread_cond_t cond;
+extern pthread_mutex_t flight_departure_mutex;
+extern pthread_mutex_t flight_arrival_mutex;
 //flag for program termination
 extern int TERMINATE;
+//system settingss
 settings_t settings;
 //Linked Lists
 extern flight_departure_t* flights_departure;
@@ -72,14 +78,15 @@ sem_t * sem_log;
 int msqid;
 //pipe
 int fd_pipe;
+fd_set read_set;
 
-void print_list_departures(flight_departure_t * list);
-void print_list_arrivals(flight_arrival_t * list);
-void append_to_list_departures(flight_departure_t * f, flight_departure_t *flight_to_add);
-void append_to_list_arrivals(flight_arrival_t * f, flight_arrival_t *flight_to_add);
-int count_total_arrivals(flight_arrival_t* list);
-int count_total_departures(flight_departure_t* list);
-flight_arrival_t * popFirstArrival();
-flight_departure_t * popFirstDeparture();
+void print_list_departures();
+void print_list_arrivals();
+void append_to_list_departures(flight_departure_t *flight_to_add);
+void append_to_list_arrivals(flight_arrival_t *flight_to_add);
+int count_total_arrivals();
+int count_total_departures();
+flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival);
+flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
 
 #endif

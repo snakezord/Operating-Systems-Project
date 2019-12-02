@@ -83,7 +83,6 @@ void init_semaphores(){
     	perror("sem_init(): Failed to initialize stats semaphore");
     	exit(EXIT_FAILURE);
     }
-
     if ((sem_log = sem_open("/sem_log", O_CREAT, 0644, 1)) == SEM_FAILED) {
     	perror("sem_init(): Failed to initialize log semaphore");
     	exit(EXIT_FAILURE);
@@ -107,7 +106,7 @@ void create_shared_memory(){
 
 void create_message_queue(){
     // Message Queue
-    msqid = msgget(IPC_PRIVATE, IPC_CREAT|0777);
+    msqid = msgget(IPC_PRIVATE, IPC_CREAT|0666);
 	if (msqid < -1) {
 		logger("msgget(): Failed to create MQ");
 		exit(-1);
@@ -115,7 +114,7 @@ void create_message_queue(){
 }
 
 void terminate(int sig){
-    logger("Program ended!\n");
+    logger("Program ended!");
 
     TERMINATE = 1;
     
@@ -134,10 +133,10 @@ void terminate(int sig){
         exit(EXIT_FAILURE);
     }
 
-    if (sem_unlink("/sem_stats") == -1) {
-    perror("Error unlinking sem_stats");
-    exit(EXIT_FAILURE);
-    }
+    //if (sem_unlink("/sem_stats") == -1) {
+    //perror("Error unlinking sem_stats");
+    //exit(EXIT_FAILURE);
+    //}
     
     //Destroy log semaphore
 	if (sem_close(sem_log) == -1) {
@@ -145,10 +144,10 @@ void terminate(int sig){
         exit(EXIT_FAILURE);
     }
     
-    if (sem_unlink("/sem_log") == -1) {
-    perror("Error unlinking sem_log");
-    exit(EXIT_FAILURE);
-    }   
+    //if (sem_unlink("/sem_log") == -1) {
+    //perror("Error unlinking sem_log");
+    //exit(EXIT_FAILURE);
+    //}   
     
     //Waits for processes to exit
 	while(wait(NULL) > 0);   
@@ -165,6 +164,7 @@ void init(){
     //criar message queue
     create_message_queue();
 
+    //signals
     signal(SIGUSR1, SIG_IGN);
     signal(SIGINT, terminate);
 
@@ -173,42 +173,53 @@ void init(){
     
     //ler ficheiro config.txt
     if(read_config_file()){
-        logger("Config read successfully\n");
+        logger("Config read successfully");
     }
     else{
-        logger("Error in reading config\n");
+        logger("Error in reading config");
         exit(0);
     }
     
-    logger("Program started!\n");
-
+    logger("Program started!");
+    
     create_central_process();
 
     create_pipe();
 
-    handle_pipe();
-    
-    //criar threads
-    create_thread_arrivals();
-    create_thread_departures(); 
-
+    int TYPE;
+    while(!TERMINATE){
+        TYPE = handle_pipe();
+        if(TYPE==ARRIVAL){
+            create_thread_arrivals(); 
+        }
+        if(TYPE==DEPARTURE){
+            create_thread_departures();
+        }
+        if(TYPE==-1){
+            logger("Error in reading pipe");
+        }
+    }
 }
 
 void create_thread_arrivals(){
-    printf("arrival thread\n");
+    flight_arrival_t * arrival;
     while(flights_arrival != NULL){
-        flight_arrival_t * arrival = popFirstArrival();
-        pthread_create(&(arrival->thread),NULL,flight_arrival,arrival);
-        printf("thread arrival created\n");
+        arrival = popFirstArrival(&flights_arrival);
+        if(pthread_create(&(arrival->thread),NULL,flight_arrival,(void*)arrival)!=0){
+            logger("Error creating thread arrival flight");
+			exit(0);
+        }
     }
 }
 
 void create_thread_departures(){
-    printf("departure thread\n");
+    flight_departure_t * departure;
     while(flights_departure != NULL){
-        flight_departure_t * departure = popFirstDeparture();
-        pthread_create(&(departure->thread),NULL,flight_departure,departure);
-        printf("thread departure created\n");
+        departure = popFirstDeparture(&flights_departure);
+        if(pthread_create(&(departure->thread),NULL,flight_departure,(void*)departure)!=0){
+            logger("Error creating thread departure flight");
+			exit(0);
+        }
     }
 }
 
@@ -221,72 +232,71 @@ void create_central_process(){
 }
 
 void create_pipe(){
-
-    //unlink(PIPE_NAME);
-    //EEXIST     =     File exists (POSIX.1-2001).
     if((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600) < 0) && (errno!=EEXIST)){
-        logger("Error creating pipe\n");
+        logger("Error creating pipe");
         exit(0);
     }
 }
 
-void handle_pipe(){
+int handle_pipe(){
+    int TYPE = 0;
     if((fd_pipe = open(PIPE_NAME, O_RDONLY))<0){
-        logger("Error opening named pipe.\n");
+        logger("Error opening named pipe.");
         exit(0);
     }
-    while(!TERMINATE){
-        while(1){
+    FD_ZERO(&read_set);
+    FD_SET(fd_pipe,&read_set);
+    if(select(fd_pipe+1,&read_set,NULL,NULL,NULL) > 0){
+        if(FD_ISSET(fd_pipe,&read_set)){
             char buffer[MAX_TEXT];
             int n = 0;
             char c = 0;
             int error = 0;
             do{
                 if(read(fd_pipe,&c,1) <= 0){
-                    error=1;
-                    break;
+                    error=-1;
+                    return error;
                 }
                 if(c != '\n'){
                     buffer[n++] = c;
                 }
             }while(c!='\n');
-            if(error){
-                break;
+            if(error==-1){
+                return error;
             }
             logger(buffer);
-            parse_request(buffer);
+            TYPE = parse_request(buffer);
+            close(fd_pipe);
         }
     }
-    close(fd_pipe);
-    exit(0);
+    return TYPE;
 }
 
-void parse_request(char *str){
+int parse_request(char *str){
     char *buffer;
     buffer = strtok(str, " ");
     int VALID_COMMAND = 0;
-    if(strcmp(buffer, "ARRIVAL")==0){
-        flight_arrival_t *flight = malloc(sizeof(flight_arrival_t));
+    if(strcmp(buffer, "DEPARTURE")==0){
+        flight_departure_t *flight = (flight_departure_t*)malloc(sizeof(flight_departure_t));
         strcpy(flight->name, strtok(NULL," "));
         strtok(NULL," ");
         flight->init= atoi(strtok(NULL," "));
-        strtok(NULL, " ");
+        strtok(NULL," ");
         flight->takeoff = atoi(strtok(NULL," "));
         if(((flight->takeoff)-(flight->init))>=0){
-            if((count_total_arrivals(flights_arrival) + 1) <= settings.max_arrivals_on_system){
-                append_to_list_arrivals(flights_arrival,flight);
-                printf("\n%s\n",flight->name);
-                printf("\n%s\n",flights_arrival->name);
-                print_list_arrivals(flights_arrival);
+            if((count_total_departures() + 1) <= settings.max_departures_on_system){
+                append_to_list_departures(flight);
+                print_list_departures();
+                return DEPARTURE;
             }else{
-                logger("You have exceed the total number of arrivals for this airport");
+                logger("You have exceed the total number of departures for this airport");
             }
         }else{
-            logger("Takeoff time is less than init time\n");
+            logger("Takeoff time is less than init time");
         }
         VALID_COMMAND = 1;
-    }else if(strcmp(buffer, "DEPARTURE")==0){
-        flight_departure_t *flight = malloc(sizeof(flight_departure_t));
+    }else if(strcmp(buffer, "ARRIVAL")==0){
+        flight_arrival_t *flight = (flight_arrival_t*)malloc(sizeof(flight_arrival_t));
         strcpy(flight->name, strtok(NULL," "));
         strtok(NULL," ");
         flight->init = atoi(strtok(NULL," "));
@@ -295,21 +305,21 @@ void parse_request(char *str){
         strtok(NULL," ");
         flight->fuel = atoi(strtok(NULL," "));
         if(((flight->fuel)-(flight->eta))>=0){
-            if((count_total_departures(flights_departure) + 1) <= settings.max_departures_on_system){
-                append_to_list_departures(flights_departure,flight);
-                printf("\n%s\n",flight->name);
-                printf("\n%s\n",flights_departure->name);
-                print_list_departures(flights_departure);
+            if((count_total_arrivals() + 1) <= settings.max_arrivals_on_system){
+                append_to_list_arrivals(flight);
+                print_list_arrivals();
+                return ARRIVAL;
             }else{
-                logger("You have exceed the total number of departures for this airport");
+                logger("You have exceed the total number of arrivals for this airport");
             }
         }else{
             logger("Plane doesn't have enough fuel to get to the airport");
         }
          VALID_COMMAND = 1;
     }if(!VALID_COMMAND){
-        logger("Invalid command!\n");
+        logger("Invalid command!");
     }
+    return 0;
 }
 
 

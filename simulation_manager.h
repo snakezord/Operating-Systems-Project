@@ -16,8 +16,8 @@ void create_pipe();
 void terminate(int sig);
 void init();
 void create_central_process();
-void handle_pipe();
-void parse_request(char *str);
+int handle_pipe();
+int parse_request(char *str);
 void create_thread_arrivals();
 void create_thread_departures();
 

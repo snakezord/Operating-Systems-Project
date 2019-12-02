@@ -4,19 +4,25 @@
 #include "shared.h"
 
 
+typedef struct flight_departure_t{
+    char name[MAX_TEXT];
+    int init, takeoff, id;
+    pthread_t thread;
+    struct flight_departure_t *next;
+}flight_departure_t;
+
 typedef struct flight_arrival_t{
     char name[MAX_TEXT];
-    int init, takeoff;
+    int init, eta, fuel, id;
     pthread_t thread;
     struct flight_arrival_t *next;
 }flight_arrival_t;
 
-typedef struct flight_departure_t{
-    char name[MAX_TEXT];
-    int init, eta, fuel;
-    pthread_t thread;
-    struct flight_departure_t *next;
-}flight_departure_t;
+typedef struct control_tower_msg{
+    long mtype;
+    int takeoff;
+    int eta,fuel;
+}control_tower_msg;
 
 /*typedef struct flight{
     flight_arrival_t flight_a;

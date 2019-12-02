@@ -21,10 +21,10 @@ void logger(const char*string){
     sTm = gmtime(&now);
     strftime(buffer,sizeof(buffer), "%H:%M:%S", sTm);
     sem_wait(sem_log);
-    printf("%s %s", buffer, string);
+    printf("%s %s\n", buffer, string);
     logs_file = fopen("logs.txt","a");
     if(logs_file != NULL){
-        fprintf(logs_file,"%s %s", buffer, string);
+        fprintf(logs_file,"%s %s\n", buffer, string);
         fclose(logs_file);
     }
     sem_post(sem_log);

@@ -3,11 +3,30 @@
 
 
 void * flight_arrival(void*arg){
-    printf("arrival!\n");
+    pthread_mutex_lock(&flight_arrival_mutex);
+    flight_arrival_t * arrival = (flight_arrival_t*)arg;
+    control_tower_msg msg;
+    msg.mtype = ARRIVAL;
+    msg.eta = arrival->eta;
+    msg.fuel = arrival->fuel;
+    if(msgsnd(msqid,&msg,sizeof(msg),0) < 0){
+        printf("Error sending message through message queue (%s).\n",strerror(errno));
+        exit(0);
+    }
+    pthread_mutex_unlock(&flight_arrival_mutex);
     return 0;
 }
 
 void * flight_departure(void*arg){
-    printf("departure!\n");
+    pthread_mutex_lock(&flight_departure_mutex);
+    flight_departure_t * departure = (flight_departure_t*)arg;
+    control_tower_msg msg;
+    msg.mtype = DEPARTURE;
+    msg.takeoff = departure->takeoff;
+    if(msgsnd(msqid,&msg,sizeof(msg),0) < 0){
+        printf("Error sending message through message queue (%s).\n",strerror(errno));
+        exit(0);
+    }
+    pthread_mutex_unlock(&flight_departure_mutex);
     return 0;
 }
