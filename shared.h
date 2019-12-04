@@ -1,6 +1,8 @@
 #if !defined(_SHARED_H_)
 #define _SHARED_H_
 
+#define _POSIX_C_SOURCE 199309L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -13,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/msg.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -88,5 +91,8 @@ int count_total_arrivals();
 int count_total_departures();
 flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival);
 flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
+struct timespec get_current_time();
+int time_difference(struct timespec start, struct timespec end);
+int time_to_millis(int time);
 
 #endif

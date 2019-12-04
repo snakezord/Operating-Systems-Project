@@ -1,15 +1,7 @@
-23:49:24 Config read successfully
-23:49:24 Program started!
-23:49:24 Control Tower - Central Process Created
+22:27:37 Config read successfully
+22:27:37 Program started!
+22:27:37 Control Tower - Central Process Created
 
-23:49:31 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000¿
-23:49:46 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000~
-23:49:47 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000~
-23:49:47 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000~
-23:49:48 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000~
-23:49:48 ARRIVAL TP437 init: 0 eta: 100 fuel: 1000~
-23:50:09 DEPARTURE TP73 init: 10 takeoff: 100
-00:09:36 Program ended!
-00:09:36 Error receiving messagem from message queue.
+22:28:01 Program ended!
+22:28:01 Error receiving messagem from message queue.
 
-00:09:36 Error opening named pipe.

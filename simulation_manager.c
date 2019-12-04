@@ -205,6 +205,7 @@ void create_thread_arrivals(){
     flight_arrival_t * arrival;
     while(flights_arrival != NULL){
         arrival = popFirstArrival(&flights_arrival);
+        sleep(time_to_millis(arrival->init));
         if(pthread_create(&(arrival->thread),NULL,flight_arrival,(void*)arrival)!=0){
             logger("Error creating thread arrival flight");
 			exit(0);
@@ -216,6 +217,7 @@ void create_thread_departures(){
     flight_departure_t * departure;
     while(flights_departure != NULL){
         departure = popFirstDeparture(&flights_departure);
+        sleep(time_to_millis(departure->init));
         if(pthread_create(&(departure->thread),NULL,flight_departure,(void*)departure)!=0){
             logger("Error creating thread departure flight");
 			exit(0);
@@ -324,7 +326,11 @@ int parse_request(char *str){
 
 
 int main(){
-
+    struct timespec start_time = get_current_time();
+    sleep(10);
+    struct timespec end_time = get_current_time();
+    int time_diffe = time_difference(start_time,end_time);
+    printf("diferença = %d\n",time_to_millis(time_diffe));
     init();
     
     return 0;

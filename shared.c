@@ -113,4 +113,20 @@ int count_total_departures(){
     //printf("total dep = %d\n", (total+1));
     return total;
 }
+struct timespec get_current_time(){
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    return start;
+}
+
+int time_difference(struct timespec start, struct timespec end){
+    int delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    return delta_us;
+}
+
+int time_to_millis(int time){
+    return time/1000;
+}
+
+
 
