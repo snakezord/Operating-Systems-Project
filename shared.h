@@ -100,7 +100,7 @@ flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
 int get_current_time();
 int time_difference(int start, int end);
 int time_to_millis(int time);
-
+int msleep(long msec);
 void* thread_time_func(void*arg);
 
 #endif

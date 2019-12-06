@@ -209,7 +209,7 @@ void create_thread_arrivals(){
     flight_arrival_t * arrival = malloc(sizeof(flight_arrival_t));
     while(flights_arrival != NULL){
         arrival = popFirstArrival(&flights_arrival);
-        //sleep(arrival->init);
+        msleep(arrival->init);
         if(pthread_create(&(arrival->thread),NULL,flight_arrival,(void*)arrival)!=0){
             logger("Error creating thread arrival flight");
 			exit(0);
@@ -221,7 +221,7 @@ void create_thread_departures(){
     flight_departure_t * departure = malloc(sizeof(flight_departure_t));
     while(flights_departure != NULL){
         departure = popFirstDeparture(&flights_departure);
-        //sleep(departure->init);
+        msleep(departure->init);
         if(pthread_create(&(departure->thread),NULL,flight_departure,(void*)departure)!=0){
             logger("Error creating thread departure flight");
 			exit(0);
@@ -298,7 +298,8 @@ int parse_request(char *str){
         flight->takeoff = atoi(strtok(NULL," "));
         if(((flight->takeoff)-(flight->init))>=0){
             if((count_total_departures() + 1) <= settings.max_departures_on_system){
-                //flight->received_time=get_current_time();
+                flight->received_time=get_current_time();
+                printf("received time: %d\n",flight->received_time);
                 append_to_list_departures(flight);
                 //print_list_departures();
                 return DEPARTURE;
@@ -320,7 +321,8 @@ int parse_request(char *str){
         flight->fuel = atoi(strtok(NULL," "));
         if(((flight->fuel)-(flight->eta))>=0){
             if((count_total_arrivals() + 1) <= settings.max_arrivals_on_system){
-                //flight->received_time=get_current_time();
+                flight->received_time=get_current_time();
+                printf("received time: %d\n",flight->received_time);
                 append_to_list_arrivals(flight);
                 //print_list_arrivals();
                 return ARRIVAL;
@@ -339,12 +341,12 @@ int parse_request(char *str){
 
 
 int main(){
-    /*int current_time = get_current_time();
+    int current_time = get_current_time();
     sleep(time_to_millis(10000));
     int end_time = get_current_time();
     int time_diffe = time_difference(current_time,end_time);
     printf("diferença = %d\n",time_diffe);
-    printf("diferença = %d\n",time_to_millis(time_diffe));*/
+    printf("diferença = %d\n",time_to_millis(time_diffe));
     init();
     return 0;
 }

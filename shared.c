@@ -167,7 +167,7 @@ int count_total_departures(){
 }
 int get_current_time(){
     struct timespec start;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    clock_gettime(CLOCK_REALTIME, &start);
     return start.tv_sec;
 }
 
@@ -180,6 +180,23 @@ int time_difference(int start, int end){
 //nano to milliseconds
 int time_to_millis(int time){
     return time/1000;
+}
+
+int msleep(long msec)
+{
+    struct timespec ts;
+    int res;
+    if (msec < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+    return res;
 }
 
 
