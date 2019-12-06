@@ -1,7 +1,9 @@
-23:45:39 Config read successfully
-23:45:39 Program started!
-23:45:39 Control Tower - Central Process Created
+16:34:14 Config read successfully
+16:34:14 Program started!
+16:34:14 Control Tower - Central Process Created
 
-23:45:44 ARRIVAL TP440 init: 0 eta: 100 fuel: 1000ÇÞ÷ÿ
-23:51:16 Error receiving messagem from message queue.
+16:34:17 ARRIVAL TP440 init: 0 eta: 100 fuel: 1000Ô
+16:34:19 ARRIVAL TP440 init: 0 eta: 100 fuel: 1000‹°
+16:34:49 Program ended!
+16:34:49 Error receiving messagem from message queue.
 

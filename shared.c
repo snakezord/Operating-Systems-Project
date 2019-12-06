@@ -34,6 +34,7 @@ void append_to_list_departures(flight_departure_t *flight_to_add){
     if(flights_departure == NULL){
         flight_to_add->id = id;
         flights_departure = flight_to_add;
+        flight_to_add->next=NULL;
         return;
     }
     flight_departure_t* current = flights_departure;
@@ -52,6 +53,7 @@ void append_to_list_arrivals(flight_arrival_t *flight_to_add){
     if(flights_arrival == NULL){
         flight_to_add->id = id;
         flights_arrival = flight_to_add;
+        flight_to_add->next=NULL;
         return;
     }
     flight_arrival_t* current = flights_arrival;
@@ -66,14 +68,15 @@ void append_to_list_arrivals(flight_arrival_t *flight_to_add){
 
 flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival) 
 {
-    flight_arrival_t * first = NULL;
-    flight_arrival_t * next_node = NULL;
+    flight_arrival_t * first = *flights_arrival;
+    flight_arrival_t * next_node = (*flights_arrival)->next;
 
     if (*flights_arrival == NULL) {
         return NULL;
     }
-    next_node = (*flights_arrival)->next;
-    first = *flights_arrival;
+
+    //next_node = (*flights_arrival)->next;
+    //first = *flights_arrival;
     free(*flights_arrival);
     *flights_arrival = next_node;
     return first;   

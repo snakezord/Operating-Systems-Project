@@ -16,11 +16,11 @@ void control_tower(){
             if(msg.priority=1){
                 //É prioritária
             }
+            printf("fuel: %d\neta: %d\npriority: %d\n",fuel, time_to_runway,msg.priority);
         }
         if(msg.mtype == DEPARTURE){
             int takeoff_instant =  msg.takeoff;
-
-
+            printf("takeoff: %d\n",takeoff_instant);
         }
     }
 }

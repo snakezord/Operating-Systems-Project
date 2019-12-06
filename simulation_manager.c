@@ -206,7 +206,7 @@ void init(){
 }
 
 void create_thread_arrivals(){
-    flight_arrival_t * arrival;
+    flight_arrival_t * arrival = malloc(sizeof(flight_arrival_t));
     while(flights_arrival != NULL){
         arrival = popFirstArrival(&flights_arrival);
         //sleep(arrival->init);
@@ -218,7 +218,7 @@ void create_thread_arrivals(){
 }
 
 void create_thread_departures(){
-    flight_departure_t * departure;
+    flight_departure_t * departure = malloc(sizeof(flight_departure_t));
     while(flights_departure != NULL){
         departure = popFirstDeparture(&flights_departure);
         //sleep(departure->init);

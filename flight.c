@@ -12,6 +12,7 @@ void * flight_arrival(void*arg){
     if(arrival->fuel <= 4+(arrival->eta)+settings.landing_duration){
         msg.priority = 1;
     }
+    msg.priority = 0;
     if(msgsnd(msqid,&msg,sizeof(msg),0) < 0){
         printf("Error sending message through message queue (%s).\n",strerror(errno));
         exit(0);
@@ -26,6 +27,7 @@ void * flight_departure(void*arg){
     control_tower_msg msg;
     msg.mtype = DEPARTURE;
     msg.takeoff = departure->takeoff;
+    msg.priority = 0;
     if(msgsnd(msqid,&msg,sizeof(msg),0) < 0){
         printf("Error sending message through message queue (%s).\n",strerror(errno));
         exit(0);
