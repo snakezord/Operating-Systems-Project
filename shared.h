@@ -17,6 +17,7 @@
 #include <sys/msg.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <sys/select.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
@@ -60,6 +61,10 @@ typedef struct{
     int flights_rejected_by_control_tower;
 }statistic_t;
 
+typedef struct{
+    int milliseconds;
+    pthread_t time_thread;
+}time_thread_t;
 
 extern pthread_cond_t cond;
 extern pthread_mutex_t flight_departure_mutex;
@@ -71,6 +76,7 @@ settings_t settings;
 //Linked Lists
 extern flight_departure_t* flights_departure;
 extern flight_arrival_t* flights_arrival;
+time_thread_t * current_time;
 //Shared mem
 int shmidStats;
 statistic_t * sharedMemoryStats;
@@ -91,8 +97,10 @@ int count_total_arrivals();
 int count_total_departures();
 flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival);
 flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
-struct timespec get_current_time();
-int time_difference(struct timespec start, struct timespec end);
+int get_current_time();
+int time_difference(int start, int end);
 int time_to_millis(int time);
+
+void* thread_time_func(void*arg);
 
 #endif

@@ -20,6 +20,7 @@ int handle_pipe();
 int parse_request(char *str);
 void create_thread_arrivals();
 void create_thread_departures();
+void create_thread_time();
 
 
 #endif

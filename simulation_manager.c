@@ -155,6 +155,7 @@ void terminate(int sig){
 
 void init(){
     
+
     //criar memoria partilhada
     create_shared_memory();
 
@@ -181,10 +182,13 @@ void init(){
     }
     
     logger("Program started!");
-    
+
+
     create_central_process();
 
     create_pipe();
+
+    //create_thread_time();
 
     int TYPE;
     while(!TERMINATE){
@@ -205,7 +209,7 @@ void create_thread_arrivals(){
     flight_arrival_t * arrival;
     while(flights_arrival != NULL){
         arrival = popFirstArrival(&flights_arrival);
-        sleep(time_to_millis(arrival->init));
+        //sleep(arrival->init);
         if(pthread_create(&(arrival->thread),NULL,flight_arrival,(void*)arrival)!=0){
             logger("Error creating thread arrival flight");
 			exit(0);
@@ -217,11 +221,18 @@ void create_thread_departures(){
     flight_departure_t * departure;
     while(flights_departure != NULL){
         departure = popFirstDeparture(&flights_departure);
-        sleep(time_to_millis(departure->init));
+        //sleep(departure->init);
         if(pthread_create(&(departure->thread),NULL,flight_departure,(void*)departure)!=0){
             logger("Error creating thread departure flight");
 			exit(0);
         }
+    }
+}
+
+void create_thread_time(){
+    if(pthread_create(&(current_time->time_thread) ,NULL,thread_time_func,(void*)thread_time_func)!=0){
+        logger("Error creating thread for time");
+        exit(0);
     }
 }
 
@@ -287,8 +298,9 @@ int parse_request(char *str){
         flight->takeoff = atoi(strtok(NULL," "));
         if(((flight->takeoff)-(flight->init))>=0){
             if((count_total_departures() + 1) <= settings.max_departures_on_system){
+                //flight->received_time=get_current_time();
                 append_to_list_departures(flight);
-                print_list_departures();
+                //print_list_departures();
                 return DEPARTURE;
             }else{
                 logger("You have exceed the total number of departures for this airport");
@@ -308,8 +320,9 @@ int parse_request(char *str){
         flight->fuel = atoi(strtok(NULL," "));
         if(((flight->fuel)-(flight->eta))>=0){
             if((count_total_arrivals() + 1) <= settings.max_arrivals_on_system){
+                //flight->received_time=get_current_time();
                 append_to_list_arrivals(flight);
-                print_list_arrivals();
+                //print_list_arrivals();
                 return ARRIVAL;
             }else{
                 logger("You have exceed the total number of arrivals for this airport");
@@ -326,13 +339,19 @@ int parse_request(char *str){
 
 
 int main(){
-    struct timespec start_time = get_current_time();
-    sleep(10);
-    struct timespec end_time = get_current_time();
-    int time_diffe = time_difference(start_time,end_time);
-    printf("diferença = %d\n",time_to_millis(time_diffe));
+    /*int current_time = get_current_time();
+    sleep(time_to_millis(10000));
+    int end_time = get_current_time();
+    int time_diffe = time_difference(current_time,end_time);
+    printf("diferença = %d\n",time_diffe);
+    printf("diferença = %d\n",time_to_millis(time_diffe));*/
     init();
-    
     return 0;
 }
 
+
+//resolver threads
+//criar uma thread para incrementar o tempo(milissegundo a milissegundo) 
+// no extern int current_time e 
+//correr função popDeparture(Arrival)Init dentro dessa thread 
+//correndo a função a cada vez que incrementamos o tempo 

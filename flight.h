@@ -6,6 +6,7 @@
 
 typedef struct flight_departure_t{
     char name[MAX_TEXT];
+    int received_time;
     int init, takeoff, id;
     pthread_t thread;
     struct flight_departure_t *next;
@@ -13,6 +14,7 @@ typedef struct flight_departure_t{
 
 typedef struct flight_arrival_t{
     char name[MAX_TEXT];
+    int received_time;
     int init, eta, fuel, id;
     pthread_t thread;
     struct flight_arrival_t *next;
@@ -22,6 +24,7 @@ typedef struct control_tower_msg{
     long mtype;
     int takeoff;
     int eta,fuel;
+    int priority;
 }control_tower_msg;
 
 /*typedef struct flight{
