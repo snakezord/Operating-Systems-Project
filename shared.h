@@ -36,8 +36,13 @@
 #define MAX 200
 #define STRINGSIZE 256
 #define MAX_TEXT 1024
-#define DEPARTURE 1
-#define ARRIVAL 2
+#define DEPARTURE 2
+#define ARRIVAL 3
+#define PRIORITY 1
+#define L_01 0
+#define R_01 1
+#define L_28 2
+#define R_28 3
 
 typedef struct{
     int time_unit;
@@ -66,9 +71,15 @@ typedef struct{
     pthread_t time_thread;
 }time_thread_t;
 
-extern pthread_cond_t cond;
+
+extern runway_t RUNWAYS[4];
+//thead sync
+extern pthread_cond_t condition;
 extern pthread_mutex_t flight_departure_mutex;
 extern pthread_mutex_t flight_arrival_mutex;
+//CT thread mutex
+extern pthread_mutex_t CT_flight_departure_mutex;
+extern pthread_mutex_t CT_flight_arrival_mutex;
 //flag for program termination
 extern int TERMINATE;
 //system settingss
@@ -76,15 +87,24 @@ settings_t settings;
 //Linked Lists
 extern flight_departure_t* flights_departure;
 extern flight_arrival_t* flights_arrival;
+extern flight_departure_t* flights_departure_copy;
+extern flight_arrival_t* flights_arrival_copy;
+//queues
+extern arrival_queue_t* arrival_queue;
+extern departure_queue_t* departure_queue;
 time_thread_t * current_time;
 //Shared mem
 int shmidStats;
 statistic_t * sharedMemoryStats;
+int shmid_flight_CT;
+shm_struct * sharedMemoryFlight_CT;
 //Semaphore
 sem_t * sem_stats;
 sem_t * sem_log;
+sem_t * sem_flight;
 //Message queue
 int msqid;
+
 //pipe
 int fd_pipe;
 fd_set read_set;
@@ -92,15 +112,30 @@ fd_set read_set;
 void print_list_departures();
 void print_list_arrivals();
 void append_to_list_departures(flight_departure_t *flight_to_add);
+void append_to_list_departures_copy(flight_departure_t *flight_to_add);
+void append_to_queue_departures(departure_queue_t *flight_to_add);
 void append_to_list_arrivals(flight_arrival_t *flight_to_add);
+void append_to_list_arrivals_copy(flight_arrival_t *flight_to_add);
+void append_to_queue_arrivals(arrival_queue_t *flight_to_add);
 int count_total_arrivals();
 int count_total_departures();
+int count_total_arrivals_queue();
+int count_total_departures_queue();
 flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival);
 flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
+void popFirstArrivalQueue(arrival_queue_t ** flights_arrival);
+void popFirstDepartureQueue(departure_queue_t ** flights_departure);
 int get_current_time();
 int time_difference(int start, int end);
 int time_to_millis(int time);
 int msleep(long msec);
 void* thread_time_func(void*arg);
+int get_empty_slot();
+void DepartureMergeSort(departure_queue_t** headRef);
+departure_queue_t* DepartureSortedMerge(departure_queue_t* a, departure_queue_t* b);
+void DepartureFrontBackSplit(departure_queue_t* source, departure_queue_t** frontRef, departure_queue_t** backRef);
+void ArrivalMergeSort(arrival_queue_t** headRef);
+arrival_queue_t* ArrivalSortedMerge(arrival_queue_t* a, arrival_queue_t* b);
+void ArrivalFrontBackSplit(arrival_queue_t* source, arrival_queue_t** frontRef, arrival_queue_t** backRef);
 
 #endif

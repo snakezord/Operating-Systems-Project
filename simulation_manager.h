@@ -14,6 +14,7 @@ void create_shared_memory();
 void create_message_queue();
 void create_pipe();
 void terminate(int sig);
+void init_runways();
 void init();
 void create_central_process();
 int handle_pipe();

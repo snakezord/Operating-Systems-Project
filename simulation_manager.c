@@ -78,13 +78,17 @@ void show_stats(int sig){
 }
 
 void init_semaphores(){
-
-    if ((sem_stats = sem_open("/sem_stats", O_CREAT, 0644, 1)) == SEM_FAILED) {
-    	perror("sem_init(): Failed to initialize stats semaphore");
+    
+    if ((sem_stats = sem_open("sem_stats", O_CREAT, 0644, 1)) == SEM_FAILED) {
+    	perror("sem_open(): Failed to initialize stats semaphore");
     	exit(EXIT_FAILURE);
     }
-    if ((sem_log = sem_open("/sem_log", O_CREAT, 0644, 1)) == SEM_FAILED) {
-    	perror("sem_init(): Failed to initialize log semaphore");
+    if ((sem_log = sem_open("sem_log", O_CREAT, 0644, 1)) == SEM_FAILED) {
+    	perror("sem_open(): Failed to initialize logs semaphore");
+    	exit(EXIT_FAILURE);
+    }
+    if ((sem_flight = sem_open("sem_flight", O_CREAT, 0644, 1)) == SEM_FAILED) {
+    	perror("sem_open(): Failed to initialize flight semaphore");
     	exit(EXIT_FAILURE);
     }
 }
@@ -102,6 +106,19 @@ void create_shared_memory(){
     	logger("shmat(): Failed to attach memory for statistics");
     	exit(-1);
     }
+    
+    shmid_flight_CT = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT|0666);
+    if (shmid_flight_CT == -1) {
+    	logger("shmget(): Failed to create shared memory for Flight_CT");
+    	exit(-1);
+    }
+
+    sharedMemoryFlight_CT = shmat(shmid_flight_CT, NULL, 0);
+    if (*((int *) sharedMemoryFlight_CT) == -1) {
+    	logger("shmat(): Failed to attach memory for Flight_CT");
+    	exit(-1);
+    }
+
 }
 
 void create_message_queue(){
@@ -117,15 +134,6 @@ void terminate(int sig){
     logger("Program ended!");
 
     TERMINATE = 1;
-    
-    //Shared memory detach
-	shmdt(&sharedMemoryStats);
-
-    //Remove shared memory
-	shmctl(shmidStats, IPC_RMID, NULL);
-    
-    //Remove message queue
-	msgctl(msqid, IPC_RMID, NULL);
 
     //Destroy stats semaphore
     if (sem_close(sem_stats) == -1) {
@@ -133,34 +141,75 @@ void terminate(int sig){
         exit(EXIT_FAILURE);
     }
 
-    //if (sem_unlink("/sem_stats") == -1) {
-    //perror("Error unlinking sem_stats");
-    //exit(EXIT_FAILURE);
-    //}
-    
     //Destroy log semaphore
 	if (sem_close(sem_log) == -1) {
         perror("Error closing sem_log");
         exit(EXIT_FAILURE);
     }
     
-    //if (sem_unlink("/sem_log") == -1) {
-    //perror("Error unlinking sem_log");
-    //exit(EXIT_FAILURE);
-    //}   
+    //Destroy flight semaphore
+	if (sem_close(sem_flight) == -1) {
+        perror("Error closing sem_log");
+        exit(EXIT_FAILURE);
+    }
+
+    //Shared memory detach stats
+	shmdt(&sharedMemoryStats);
+
+    //Remove shared memory stats
+	shmctl(shmidStats, IPC_RMID, NULL);
+
+    //Shared memory detach flight
+	shmdt(&sharedMemoryFlight_CT);
+
+    //Remove shared memory flight
+	shmctl(shmid_flight_CT, IPC_RMID, NULL);
     
+    //Remove message queue
+	msgctl(msqid, IPC_RMID, NULL); 
+
     //Waits for processes to exit
-	while(wait(NULL) > 0);   
+	wait(NULL);  
+
+}
+
+void init_runways(){
+
+    runway_t l_01;
+    l_01.occupied = 0;
+    l_01.runway = L_01;
+    l_01.TYPE = DEPARTURE;
+
+    runway_t r_01;
+    r_01.occupied = 0;
+    r_01.runway = R_01;
+    r_01.TYPE = DEPARTURE;
+
+    runway_t l_28;
+    l_28.occupied = 0;
+    l_28.runway = L_28;
+    l_28.TYPE = ARRIVAL;
+
+    runway_t r_28;
+    r_28.occupied = 0;
+    r_28.runway = R_28;
+    r_28.TYPE = ARRIVAL;
+
+    RUNWAYS[L_01] = l_01;
+    RUNWAYS[R_01] = r_01;
+    RUNWAYS[L_28] = l_28;
+    RUNWAYS[R_28] = r_28;
 }
 
 void init(){
     
-
-    //criar memoria partilhada
     create_shared_memory();
 
     init_semaphores();
+
     init_stats();
+
+    init_runways();    
     
     //criar message queue
     create_message_queue();
@@ -179,6 +228,15 @@ void init(){
     else{
         logger("Error in reading config");
         exit(0);
+    }
+
+    //Init Slots sharedmemory
+    int size = settings.max_departures_on_system+settings.max_arrivals_on_system;
+    sharedMemoryFlight_CT->slots = malloc(size*sizeof(slots_struct));
+    int i;
+    for(i=0;i<size;i++){
+        sharedMemoryFlight_CT->slots[i].holding = 1;
+        sharedMemoryFlight_CT->slots[i].occupied = 0;
     }
     
     logger("Program started!");
@@ -203,29 +261,43 @@ void init(){
             logger("Error in reading pipe");
         }
     }
+    
+    //Finish Arrival and Departure threads
+    flight_arrival_t * current_arrival = flights_arrival_copy;
+    while (current_arrival->next != NULL) {
+        pthread_join(current_arrival->thread, NULL);
+        current_arrival = current_arrival->next;
+    }
+    flight_departure_t* current_departure = flights_departure_copy;
+    while (current_departure->next != NULL) {
+        pthread_join(current_departure->thread, NULL);
+        current_departure = current_departure->next;
+    }
 }
 
 void create_thread_arrivals(){
-    flight_arrival_t * arrival = malloc(sizeof(flight_arrival_t));
+    flight_arrival_t * arrival;
     while(flights_arrival != NULL){
+        //FIFO
         arrival = popFirstArrival(&flights_arrival);
-        msleep(arrival->init);
         if(pthread_create(&(arrival->thread),NULL,flight_arrival,(void*)arrival)!=0){
             logger("Error creating thread arrival flight");
 			exit(0);
         }
+        append_to_list_arrivals_copy(arrival);
     }
 }
 
 void create_thread_departures(){
-    flight_departure_t * departure = malloc(sizeof(flight_departure_t));
+    flight_departure_t * departure;
     while(flights_departure != NULL){
+        //FIFO
         departure = popFirstDeparture(&flights_departure);
-        msleep(departure->init);
         if(pthread_create(&(departure->thread),NULL,flight_departure,(void*)departure)!=0){
             logger("Error creating thread departure flight");
 			exit(0);
         }
+        append_to_list_departures_copy(departure);
     }
 }
 
@@ -297,17 +369,24 @@ int parse_request(char *str){
         strtok(NULL," ");
         flight->takeoff = atoi(strtok(NULL," "));
         if(((flight->takeoff)-(flight->init))>=0){
+            //Caso o número de voos já esteja no máximo permitido, o voo deve ser imediatamente
+            //rejeitado, sendo que este evento deve ser reportado nas estatísticas e log
             if((count_total_departures() + 1) <= settings.max_departures_on_system){
                 flight->received_time=get_current_time();
-                printf("received time: %d\n",flight->received_time);
                 append_to_list_departures(flight);
                 //print_list_departures();
                 return DEPARTURE;
             }else{
                 logger("You have exceed the total number of departures for this airport");
+                sem_wait(sem_stats);
+                sharedMemoryStats->flights_rejected_by_control_tower++;
+                sem_post(sem_stats);
             }
         }else{
             logger("Takeoff time is less than init time");
+            sem_wait(sem_stats);
+            sharedMemoryStats->flights_rejected_by_control_tower++;
+            sem_post(sem_stats);
         }
         VALID_COMMAND = 1;
     }else if(strcmp(buffer, "ARRIVAL")==0){
@@ -320,9 +399,10 @@ int parse_request(char *str){
         strtok(NULL," ");
         flight->fuel = atoi(strtok(NULL," "));
         if(((flight->fuel)-(flight->eta))>=0){
+            //Caso o número de voos já esteja no máximo permitido, o voo deve ser imediatamente
+            //rejeitado, sendo que este evento deve ser reportado nas estatísticas e log
             if((count_total_arrivals() + 1) <= settings.max_arrivals_on_system){
                 flight->received_time=get_current_time();
-                printf("received time: %d\n",flight->received_time);
                 append_to_list_arrivals(flight);
                 //print_list_arrivals();
                 return ARRIVAL;
@@ -341,12 +421,6 @@ int parse_request(char *str){
 
 
 int main(){
-    int current_time = get_current_time();
-    sleep(time_to_millis(10000));
-    int end_time = get_current_time();
-    int time_diffe = time_difference(current_time,end_time);
-    printf("diferença = %d\n",time_diffe);
-    printf("diferença = %d\n",time_to_millis(time_diffe));
     init();
     return 0;
 }

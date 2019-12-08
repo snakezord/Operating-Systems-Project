@@ -20,12 +20,29 @@ typedef struct flight_arrival_t{
     struct flight_arrival_t *next;
 }flight_arrival_t;
 
+
 typedef struct control_tower_msg{
     long mtype;
+    char name[MAX_TEXT];
     int takeoff;
     int eta,fuel;
     int priority;
-}control_tower_msg;
+    int slot;
+}control_tower_msg_t;
+
+typedef struct slots_struct{
+    int occupied;
+    int type;
+    int depart;
+    int holding;
+    int detour;
+    int landing;
+}slots_struct;
+
+typedef struct shm_struct{
+    slots_struct *slots;
+} shm_struct;
+
 
 /*typedef struct flight{
     flight_arrival_t flight_a;
