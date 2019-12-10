@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #if !defined(_FLIGHT_H_)
 #define _FLIGHT_H_
 #define MAX_TEXT 1024
@@ -20,7 +22,6 @@ typedef struct flight_arrival_t{
     struct flight_arrival_t *next;
 }flight_arrival_t;
 
-
 typedef struct control_tower_msg{
     long mtype;
     char name[MAX_TEXT];
@@ -30,18 +31,19 @@ typedef struct control_tower_msg{
     int slot;
 }control_tower_msg_t;
 
-typedef struct slots_struct{
+typedef struct slots_struct_t{
     int occupied;
     int type;
     int depart;
     int holding;
     int detour;
     int landing;
-}slots_struct;
+    int runway;
+}slots_struct_t;
 
-typedef struct shm_struct{
-    slots_struct *slots;
-} shm_struct;
+typedef struct shm_slots_struct_t{
+    slots_struct_t *slots;
+} shm_slots_struct_t;
 
 
 /*typedef struct flight{

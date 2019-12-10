@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #if !defined(_SHARED_H_)
 #define _SHARED_H_
 
@@ -53,7 +55,6 @@ typedef struct{
     int max_arrivals_on_system;
 }settings_t;
 
-
 typedef struct{
     int total_flights_created;
     int total_flights_landed;
@@ -72,14 +73,18 @@ typedef struct{
 }time_thread_t;
 
 
-extern runway_t RUNWAYS[4];
 //thead sync
-extern pthread_cond_t condition;
+extern pthread_mutex_t holding_arrival_mutex;
+extern pthread_cond_t holding_arrival_condition;
+
+extern pthread_mutex_t holding_departure_mutex;
+extern pthread_cond_t holding_departure_condition;
+
 extern pthread_mutex_t flight_departure_mutex;
 extern pthread_mutex_t flight_arrival_mutex;
 //CT thread mutex
-extern pthread_mutex_t CT_flight_departure_mutex;
-extern pthread_mutex_t CT_flight_arrival_mutex;
+extern pthread_mutex_t CT_flight_departure_MANAGEMENT_mutex;
+extern pthread_mutex_t CT_flight_arrival_MANAGEMENT_mutex;
 //flag for program termination
 extern int TERMINATE;
 //system settingss
@@ -92,16 +97,18 @@ extern flight_arrival_t* flights_arrival_copy;
 //queues
 extern arrival_queue_t* arrival_queue;
 extern departure_queue_t* departure_queue;
-time_thread_t * current_time;
 //Shared mem
 int shmidStats;
 statistic_t * sharedMemoryStats;
-int shmid_flight_CT;
-shm_struct * sharedMemoryFlight_CT;
+int shmidSlots;
+shm_slots_struct_t * sharedMemorySlots;
+int shmidRunways;
+runway_t * RUNWAYS;
 //Semaphore
 sem_t * sem_stats;
 sem_t * sem_log;
-sem_t * sem_flight;
+sem_t * sem_slots;
+sem_t * sem_runways;
 //Message queue
 int msqid;
 
@@ -125,12 +132,9 @@ flight_arrival_t * popFirstArrival(flight_arrival_t ** flights_arrival);
 flight_departure_t * popFirstDeparture(flight_departure_t ** flights_departure);
 void popFirstArrivalQueue(arrival_queue_t ** flights_arrival);
 void popFirstDepartureQueue(departure_queue_t ** flights_departure);
-int get_current_time();
-int time_difference(int start, int end);
-int time_to_millis(int time);
 int msleep(long msec);
-void* thread_time_func(void*arg);
 int get_empty_slot();
+int cmp( const void *left, const void *right );
 void DepartureMergeSort(departure_queue_t** headRef);
 departure_queue_t* DepartureSortedMerge(departure_queue_t* a, departure_queue_t* b);
 void DepartureFrontBackSplit(departure_queue_t* source, departure_queue_t** frontRef, departure_queue_t** backRef);

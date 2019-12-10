@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #include "shared.h"
 //Lists
 flight_departure_t* flights_departure = NULL;
@@ -8,8 +10,11 @@ flight_arrival_t* flights_arrival_copy = NULL;
 arrival_queue_t* arrival_queue = NULL;
 departure_queue_t* departure_queue = NULL;
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t holding_arrival_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t holding_arrival_condition = PTHREAD_COND_INITIALIZER;
+
+pthread_mutex_t holding_departure_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t holding_departure_condition = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t flight_departure_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t flight_arrival_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -18,7 +23,6 @@ pthread_mutex_t CT_flight_departure_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t CT_flight_arrival_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int TERMINATE = 0;
-runway_t RUNWAYS[4];
 
 
 void print_list_departures(){
@@ -228,24 +232,7 @@ int count_total_departures(){
         total += 1;
         current = current->next;
     }
-    //printf("total dep = %d\n", (total+1));
     return total;
-}
-int get_current_time(){
-    struct timespec start;
-    clock_gettime(CLOCK_REALTIME, &start);
-    return start.tv_sec;
-}
-
-int time_difference(int start, int end){
-    int delta_us = (end - start) * 1000000 + (end - start) / 1000;
-    return delta_us;
-}
-
-
-//nano to milliseconds
-int time_to_millis(int time){
-    return time/1000;
 }
 
 int msleep(long msec)
@@ -265,23 +252,32 @@ int msleep(long msec)
     return res;
 }
 
-
-void* thread_time_func(void*arg){
-    current_time->milliseconds = 0;
-    if(current_time->milliseconds < get_current_time()){
-        current_time->milliseconds = get_current_time();
-    }
-    return 0;
-}
-
 int get_empty_slot(){
     int i=0;
-    //sem_wait(sem_flight);
-    while(sharedMemoryFlight_CT->slots[i].occupied != 0){
+    while(sharedMemorySlots->slots[i].occupied != 0){
         i++;
     }
-    //sem_post(sem_flight);
+    sharedMemorySlots->slots[i].occupied = 1;
     return i;
+}
+
+int cmp( const void *left, const void *right )
+{
+    const departure_queue_t *a = ( const departure_queue_t *)left;
+    const departure_queue_t *b = ( const departure_queue_t *)right;
+
+    if ( b->takeoff < a->takeoff )
+    {
+        return -1;
+    }
+    else if ( a->takeoff < b->takeoff )
+    {
+        return 1;
+    }
+    else
+    {
+        return  (  a->takeoff < b->takeoff ) - ( b->takeoff < a->takeoff );
+    }
 }
 
 /* sorts the linked list by changing next pointers (not data) */

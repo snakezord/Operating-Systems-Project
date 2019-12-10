@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #include "shared.h"
 
 void print_struct(){
@@ -67,18 +69,19 @@ void init_stats(){
 void show_stats(int sig){
     sem_wait(sem_stats);
 	printf("\n\nStatistics:\n\n");
-	printf("average_time_take_off: %f\n",sharedMemoryStats->average_time_take_off);
-	printf("average_waiting_time_landing: %f\n",sharedMemoryStats ->average_waiting_time_landing);
-	printf("Total flights_redirectionated: %d\n",sharedMemoryStats ->flights_redirectionated);
-	printf("Total flights_rejected_by_control_tower: %d\n",sharedMemoryStats ->flights_rejected_by_control_tower);
-	printf("total_flights_created: %d\n",sharedMemoryStats ->total_flights_created);
-    printf("total_flights_landed: %d\n",sharedMemoryStats ->total_flights_landed);
-	printf("total_flights_taken_off: %d\n",sharedMemoryStats ->total_flights_taken_off);
+	printf("average_time_take_off: %f\n",sharedMemoryStats->average_time_take_off/sharedMemoryStats->total_flights_taken_off);
+	printf("average_waiting_time_landing: %f\n",sharedMemoryStats->average_waiting_time_landing/sharedMemoryStats->total_flights_landed);
+    printf("average_holding_maneuvers_landing: %f\n",sharedMemoryStats->holding_maneuvers_landing/sharedMemoryStats->total_flights_landed);
+	printf("Total flights_redirectionated: %d\n",sharedMemoryStats->flights_redirectionated);
+	printf("Total flights_rejected_by_control_tower: %d\n",sharedMemoryStats->flights_rejected_by_control_tower);
+	printf("total_flights_created: %d\n",sharedMemoryStats->total_flights_created);
+    printf("total_flights_landed: %d\n",sharedMemoryStats->total_flights_landed);
+	printf("total_flights_taken_off: %d\n",sharedMemoryStats->total_flights_taken_off);
     sem_post(sem_stats);
 }
 
 void init_semaphores(){
-    
+
     if ((sem_stats = sem_open("sem_stats", O_CREAT, 0644, 1)) == SEM_FAILED) {
     	perror("sem_open(): Failed to initialize stats semaphore");
     	exit(EXIT_FAILURE);
@@ -87,8 +90,12 @@ void init_semaphores(){
     	perror("sem_open(): Failed to initialize logs semaphore");
     	exit(EXIT_FAILURE);
     }
-    if ((sem_flight = sem_open("sem_flight", O_CREAT, 0644, 1)) == SEM_FAILED) {
-    	perror("sem_open(): Failed to initialize flight semaphore");
+    if ((sem_slots = sem_open("sem_slots", O_CREAT, 0644, 1)) == SEM_FAILED) {
+    	perror("sem_open(): Failed to initialize slots semaphore");
+    	exit(EXIT_FAILURE);
+    }
+    if ((sem_runways = sem_open("sem_runways", O_CREAT, 0644, 1)) == SEM_FAILED) {
+    	perror("sem_open(): Failed to initialize sem_runways semaphore");
     	exit(EXIT_FAILURE);
     }
 }
@@ -107,15 +114,27 @@ void create_shared_memory(){
     	exit(-1);
     }
     
-    shmid_flight_CT = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT|0666);
-    if (shmid_flight_CT == -1) {
-    	logger("shmget(): Failed to create shared memory for Flight_CT");
+    shmidSlots = shmget(IPC_PRIVATE, sizeof(shm_slots_struct_t), IPC_CREAT|0666);
+    if (shmidSlots == -1) {
+    	logger("shmget(): Failed to create shared memory for Slots");
     	exit(-1);
     }
 
-    sharedMemoryFlight_CT = shmat(shmid_flight_CT, NULL, 0);
-    if (*((int *) sharedMemoryFlight_CT) == -1) {
-    	logger("shmat(): Failed to attach memory for Flight_CT");
+    sharedMemorySlots= shmat(shmidSlots, NULL, 0);
+    if (*((int *) sharedMemorySlots) == -1) {
+    	logger("shmat(): Failed to attach memory for Slots");
+    	exit(-1);
+    }
+
+    shmidRunways = shmget(IPC_PRIVATE, sizeof(runway_t), IPC_CREAT|0666);
+    if (shmidSlots == -1) {
+    	logger("shmget(): Failed to create shared memory for RUNWAYS");
+    	exit(-1);
+    }
+
+    RUNWAYS= shmat(shmidRunways, NULL, 0);
+    if (*((int *) sharedMemorySlots) == -1) {
+    	logger("shmat(): Failed to attach memory for RUNWAYS");
     	exit(-1);
     }
 
@@ -131,9 +150,12 @@ void create_message_queue(){
 }
 
 void terminate(int sig){
-    logger("Program ended!");
+    logger("\nProgram ended!");
 
     TERMINATE = 1;
+    
+    pthread_cond_broadcast(&holding_arrival_condition);
+	pthread_cond_broadcast(&holding_departure_condition);
 
     //Destroy stats semaphore
     if (sem_close(sem_stats) == -1) {
@@ -147,26 +169,40 @@ void terminate(int sig){
         exit(EXIT_FAILURE);
     }
     
-    //Destroy flight semaphore
-	if (sem_close(sem_flight) == -1) {
+    //Destroy slots semaphore
+	if (sem_close(sem_slots) == -1) {
         perror("Error closing sem_log");
         exit(EXIT_FAILURE);
     }
 
     //Shared memory detach stats
 	shmdt(&sharedMemoryStats);
-
+    
     //Remove shared memory stats
 	shmctl(shmidStats, IPC_RMID, NULL);
 
-    //Shared memory detach flight
-	shmdt(&sharedMemoryFlight_CT);
+    //Shared memory detach Slots
+	shmdt(&sharedMemorySlots);
 
-    //Remove shared memory flight
-	shmctl(shmid_flight_CT, IPC_RMID, NULL);
+    //Remove shared memory Slots
+	shmctl(shmidSlots, IPC_RMID, NULL);
+
+    //Shared memory detach RUNWAYS
+	shmdt(&RUNWAYS);
+
+    //Remove shared memory RUNWAYS
+	shmctl(shmidRunways, IPC_RMID, NULL);
     
     //Remove message queue
 	msgctl(msqid, IPC_RMID, NULL); 
+
+    pthread_mutex_destroy(&flight_arrival_mutex);
+    pthread_mutex_destroy(&holding_arrival_mutex);
+	pthread_cond_destroy(&holding_arrival_condition);
+
+    pthread_mutex_destroy(&holding_departure_mutex);
+	pthread_mutex_destroy(&flight_departure_mutex);
+	pthread_cond_destroy(&holding_departure_condition);
 
     //Waits for processes to exit
 	wait(NULL);  
@@ -232,21 +268,23 @@ void init(){
 
     //Init Slots sharedmemory
     int size = settings.max_departures_on_system+settings.max_arrivals_on_system;
-    sharedMemoryFlight_CT->slots = malloc(size*sizeof(slots_struct));
+    sharedMemorySlots->slots = malloc(size*sizeof(slots_struct_t));
     int i;
     for(i=0;i<size;i++){
-        sharedMemoryFlight_CT->slots[i].holding = 1;
-        sharedMemoryFlight_CT->slots[i].occupied = 0;
+        sharedMemorySlots->slots[i].type = 0;
+        sharedMemorySlots->slots[i].landing = 0;
+        sharedMemorySlots->slots[i].detour = 0;
+        sharedMemorySlots->slots[i].depart = 0;
+        sharedMemorySlots->slots[i].holding = 1;
+        sharedMemorySlots->slots[i].occupied = 0;
     }
     
     logger("Program started!");
 
-
+    
     create_central_process();
 
     create_pipe();
-
-    //create_thread_time();
 
     int TYPE;
     while(!TERMINATE){
@@ -298,13 +336,6 @@ void create_thread_departures(){
 			exit(0);
         }
         append_to_list_departures_copy(departure);
-    }
-}
-
-void create_thread_time(){
-    if(pthread_create(&(current_time->time_thread) ,NULL,thread_time_func,(void*)thread_time_func)!=0){
-        logger("Error creating thread for time");
-        exit(0);
     }
 }
 
@@ -372,7 +403,6 @@ int parse_request(char *str){
             //Caso o número de voos já esteja no máximo permitido, o voo deve ser imediatamente
             //rejeitado, sendo que este evento deve ser reportado nas estatísticas e log
             if((count_total_departures() + 1) <= settings.max_departures_on_system){
-                flight->received_time=get_current_time();
                 append_to_list_departures(flight);
                 //print_list_departures();
                 return DEPARTURE;
@@ -402,14 +432,19 @@ int parse_request(char *str){
             //Caso o número de voos já esteja no máximo permitido, o voo deve ser imediatamente
             //rejeitado, sendo que este evento deve ser reportado nas estatísticas e log
             if((count_total_arrivals() + 1) <= settings.max_arrivals_on_system){
-                flight->received_time=get_current_time();
                 append_to_list_arrivals(flight);
                 //print_list_arrivals();
                 return ARRIVAL;
             }else{
+                sem_wait(sem_stats);
+                sharedMemoryStats->flights_rejected_by_control_tower++;
+                sem_post(sem_stats);
                 logger("You have exceed the total number of arrivals for this airport");
             }
         }else{
+            sem_wait(sem_stats);
+            sharedMemoryStats->flights_redirectionated++;
+            sem_post(sem_stats);
             logger("Plane doesn't have enough fuel to get to the airport");
         }
          VALID_COMMAND = 1;

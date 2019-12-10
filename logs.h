@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #if !defined(_LOGS_H_)
 #define _LOGS_H_
 

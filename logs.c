@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #include "shared.h"
 
 FILE * logs_file;
@@ -21,7 +23,7 @@ void logger(const char*string){
     sTm = gmtime(&now);
     strftime(buffer,sizeof(buffer), "%H:%M:%S", sTm);
     sem_wait(sem_log);
-    printf("%s %s\n", buffer, string);
+    printf("\n%s %s\n", buffer, string);
     logs_file = fopen("logs.txt","a");
     if(logs_file != NULL){
         fprintf(logs_file,"%s %s\n", buffer, string);

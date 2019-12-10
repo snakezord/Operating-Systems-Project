@@ -1,3 +1,5 @@
+//Roman Zhydyk 2016231789
+//Diogo Boinas 2016238042
 #if !defined(_SIMULATION_MANAGER_H_)
 #define _SIMULATION_MANAGER_H_
 

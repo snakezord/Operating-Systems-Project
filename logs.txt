@@ -1,11 +1,12 @@
-20:08:16 Config read successfully
-20:08:16 Program started!
-20:08:16 Control Tower - Central Process Created
+02:37:17 Config read successfully
+02:37:17 Program started!
+02:37:17 Control Tower - Central Process Created
 
-20:08:20 DEPARTURE TP440 init: 0 takeoff: 100
-20:08:20 Departure Thread created: TP440
-20:08:31 DEPARTURE TP441 init: 0 takeoff: 100
-20:09:05 Program ended!
-20:09:06 Program ended!
-20:09:06 Error receiving messagem from message queue 2.
+02:37:18 ARRIVAL TP431 init: 0 eta: 100 fuel: 1000
+02:37:18 Arrival Thread created: TP431
+02:37:18 Control Tower - Arrival flight MANAGEMENT Thread: Runway L01 assigned to flight 
+02:37:42 
+Program ended!
+02:37:42 Error receiving messagem from message queue 2.
 
+02:37:42 Error opening named pipe.
